@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
     const filters = {};
 
     // 필터 파라미터 처리
+    if (req.query.ids) filters.ids = req.query.ids;
     if (req.query.job_tree) filters.job_tree = req.query.job_tree;
     if (req.query.is_starter !== undefined) filters.is_starter = parseInt(req.query.is_starter);
     if (req.query.search) filters.search = req.query.search;

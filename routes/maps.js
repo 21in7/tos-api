@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
     const filters = {};
 
     // 필터 파라미터 처리
+    if (req.query.ids) filters.ids = req.query.ids;
     if (req.query.type) filters.type = req.query.type;
     if (req.query.level) filters.level = parseInt(req.query.level);
     if (req.query.has_cm !== undefined) filters.has_cm = parseInt(req.query.has_cm);

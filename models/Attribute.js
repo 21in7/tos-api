@@ -10,6 +10,12 @@ class Attribute {
     const params = [];
 
     // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
+
     if (filters.type) {
       query += ' AND type = ?';
       countQuery += ' AND type = ?';
@@ -17,8 +23,8 @@ class Attribute {
     }
 
     if (filters.search) {
-      query += ' AND (name LIKE ? OR description LIKE ?)';
-      countQuery += ' AND (name LIKE ? OR description LIKE ?)';
+      query += ' AND (name LIKE ? OR descriptions LIKE ?)';
+      countQuery += ' AND (name LIKE ? OR descriptions LIKE ?)';
       params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 

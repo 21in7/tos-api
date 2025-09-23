@@ -8,6 +8,7 @@ class ItemController {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filters = {
+      ids: req.query.ids,
       type: req.query.type,
       rarity: req.query.rarity,
       minLevel: req.query.minLevel ? parseInt(req.query.minLevel) : undefined,

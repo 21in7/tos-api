@@ -8,6 +8,7 @@ class MonsterController {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filters = {
+      ids: req.query.ids,
       minLevel: req.query.minLevel ? parseInt(req.query.minLevel) : undefined,
       maxLevel: req.query.maxLevel ? parseInt(req.query.maxLevel) : undefined,
       search: req.query.search

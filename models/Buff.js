@@ -10,6 +10,12 @@ class Buff {
     const params = [];
 
     // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
+
     if (filters.type) {
       query += ' AND type = ?';
       countQuery += ' AND type = ?';
@@ -17,8 +23,8 @@ class Buff {
     }
 
     if (filters.search) {
-      query += ' AND (name LIKE ? OR description LIKE ?)';
-      countQuery += ' AND (name LIKE ? OR description LIKE ?)';
+      query += ' AND (name LIKE ? OR id_name LIKE ?)';
+      countQuery += ' AND (name LIKE ? OR id_name LIKE ?)';
       params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 

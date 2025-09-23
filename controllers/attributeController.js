@@ -3,80 +3,81 @@ const { successResponse, errorResponse, paginatedResponse, createdResponse, upda
 const { asyncHandler } = require('../middleware/errorHandler');
 
 class AttributeController {
-  // 모든 속성 조회
+  // 모든 특성 조회
   getAllAttributes = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filters = {
+      ids: req.query.ids,
       type: req.query.type,
       search: req.query.search
     };
 
     const result = await Attribute.findAll(page, limit, filters);
     
-    paginatedResponse(res, result.data, result.pagination, '속성 목록을 조회했습니다.');
+    paginatedResponse(res, result.data, result.pagination, '특성 목록을 조회했습니다.');
   });
 
-  // ID로 속성 조회
+  // ID로 특성 조회
   getAttributeById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
     const attribute = await Attribute.findById(id);
-    successResponse(res, attribute, '속성을 조회했습니다.');
+    successResponse(res, attribute, '특성을 조회했습니다.');
   });
 
-  // 이름으로 속성 조회
+  // 이름으로 특성 조회
   getAttributeByName = asyncHandler(async (req, res) => {
     const { name } = req.params;
     
     const attribute = await Attribute.findByName(name);
     if (!attribute) {
-      return errorResponse(res, '속성을 찾을 수 없습니다.', 404);
+      return errorResponse(res, '특성을 찾을 수 없습니다.', 404);
     }
     
-    successResponse(res, attribute, '속성을 조회했습니다.');
+    successResponse(res, attribute, '특성을 조회했습니다.');
   });
 
-  // 타입별 속성 조회
+  // 타입별 특성 조회
   getAttributesByType = asyncHandler(async (req, res) => {
     const { type } = req.params;
     
     const attributes = await Attribute.findByType(type);
-    successResponse(res, attributes, `${type} 타입 속성들을 조회했습니다.`);
+    successResponse(res, attributes, `${type} 타입 특성들을 조회했습니다.`);
   });
 
-  // 새 속성 생성
+  // 새 특성 생성
   createAttribute = asyncHandler(async (req, res) => {
     const attributeData = req.body;
     
     const newAttribute = await Attribute.create(attributeData);
-    createdResponse(res, newAttribute, '속성이 생성되었습니다.');
+    createdResponse(res, newAttribute, '특성이 생성되었습니다.');
   });
 
-  // 속성 업데이트
+  // 특성 업데이트
   updateAttribute = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
     const updatedAttribute = await Attribute.update(id, updateData);
-    updatedResponse(res, updatedAttribute, '속성이 업데이트되었습니다.');
+    updatedResponse(res, updatedAttribute, '특성이 업데이트되었습니다.');
   });
 
-  // 속성 삭제
+  // 특성 삭제
   deleteAttribute = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
     await Attribute.delete(id);
-    deletedResponse(res, '속성이 삭제되었습니다.');
+    deletedResponse(res, '특성이 삭제되었습니다.');
   });
 
-  // 속성 통계 조회
+  // 특성 통계 조회
   getAttributeStats = asyncHandler(async (req, res) => {
     const stats = await Attribute.getStats();
-    successResponse(res, stats, '속성 통계를 조회했습니다.');
+    successResponse(res, stats, '특성 통계를 조회했습니다.');
   });
 
-  // 속성 검색
+  // 특성 검색
   searchAttributes = asyncHandler(async (req, res) => {
     const { q: searchTerm } = req.query;
     
@@ -92,7 +93,7 @@ class AttributeController {
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);
   });
 
-  // 속성 타입 목록 조회
+  // 특성 타입 목록 조회
   getAttributeTypes = asyncHandler(async (req, res) => {
     const types = [
       { value: 'strength', label: '힘', description: '물리 공격력과 관련' },
@@ -102,7 +103,7 @@ class AttributeController {
       { value: 'luck', label: '운', description: '크리티컬 확률과 드롭율과 관련' }
     ];
     
-    successResponse(res, types, '속성 타입 목록을 조회했습니다.');
+    successResponse(res, types, '특성 타입 목록을 조회했습니다.');
   });
 }
 

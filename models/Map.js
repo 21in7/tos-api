@@ -10,6 +10,12 @@ class Map {
     const params = [];
 
     // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
+
     if (filters.type) {
       query += ' AND type = ?';
       countQuery += ' AND type = ?';

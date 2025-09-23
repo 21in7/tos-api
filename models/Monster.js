@@ -10,6 +10,12 @@ class Monster {
     const params = [];
 
     // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
+
     if (filters.minLevel) {
       query += ' AND level >= ?';
       countQuery += ' AND level >= ?';

@@ -10,6 +10,12 @@ class Job {
     const params = [];
 
     // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
+
     if (filters.job_tree) {
       query += ' AND job_tree = ?';
       countQuery += ' AND job_tree = ?';
