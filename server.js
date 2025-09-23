@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
 
 const { initializeDatabase } = require('./config/database');
 
@@ -42,8 +41,19 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 정적 파일 서빙
-app.use('/static', express.static(path.join(__dirname, 'public')));
+// 캐시 방지 헤더 (개발 환경에서)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    next();
+  });
+}
+
+// 정적 파일은 R2 버킷에서 직접 서빙
 
 // 라우트 설정
 app.use('/api/attributes', require('./routes/attributes'));
@@ -53,7 +63,6 @@ app.use('/api/monsters', require('./routes/monsters'));
 app.use('/api/skills', require('./routes/skills'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/maps', require('./routes/maps'));
-app.use('/api/market', require('./routes/market'));
 app.use('/api/challenges', require('./routes/challenges'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/planner', require('./routes/planner'));
@@ -71,7 +80,6 @@ app.get('/', (req, res) => {
       skills: '/api/skills',
       jobs: '/api/jobs',
       maps: '/api/maps',
-      market: '/api/market',
       challenges: '/api/challenges',
       dashboard: '/api/dashboard',
       planner: '/api/planner'

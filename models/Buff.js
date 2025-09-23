@@ -2,11 +2,11 @@ const { dbHelpers } = require('../config/database');
 const { calculatePagination } = require('../utils/response');
 const { generateIconUrl } = require('../utils/iconCache');
 
-class Attribute {
-  // 모든 속성 조회 (페이지네이션) - 슬레이브 DB 사용
+class Buff {
+  // 모든 버프 조회 (페이지네이션) - 슬레이브 DB 사용
   static async findAll(page = 1, limit = 10, filters = {}) {
-    let query = 'SELECT * FROM Attributes_attributes WHERE 1=1';
-    let countQuery = 'SELECT COUNT(*) as total FROM Attributes_attributes WHERE 1=1';
+    let query = 'SELECT * FROM Buffs_buffs WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM Buffs_buffs WHERE 1=1';
     const params = [];
 
     // 필터 적용
@@ -42,7 +42,7 @@ class Attribute {
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-attribute')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-buff')
       }));
 
       return {
@@ -54,30 +54,30 @@ class Attribute {
     }
   }
 
-  // ID로 속성 조회 - 슬레이브 DB 사용
+  // ID로 버프 조회 - 슬레이브 DB 사용 (ids 컬럼으로 조회)
   static async findById(id) {
     try {
-      const query = 'SELECT * FROM Attributes_attributes WHERE id = ?';
+      const query = 'SELECT * FROM Buffs_buffs WHERE ids = ?';
       const rows = await dbHelpers.readQuery(query, [id]);
       
       if (rows.length === 0) {
-        throw new Error('속성을 찾을 수 없습니다.');
+        throw new Error('버프를 찾을 수 없습니다.');
       }
       
       const row = rows[0];
       return {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-attribute')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-buff')
       };
     } catch (error) {
       throw error;
     }
   }
 
-  // 이름으로 속성 조회 - 슬레이브 DB 사용
+  // 이름으로 버프 조회 - 슬레이브 DB 사용
   static async findByName(name) {
     try {
-      const query = 'SELECT * FROM Attributes_attributes WHERE name = ?';
+      const query = 'SELECT * FROM Buffs_buffs WHERE name = ?';
       const rows = await dbHelpers.readQuery(query, [name]);
       
       if (rows.length === 0) {
@@ -87,119 +87,138 @@ class Attribute {
       const row = rows[0];
       return {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-attribute')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-buff')
       };
     } catch (error) {
       throw error;
     }
   }
 
-  // 속성 생성 - 마스터 DB 사용
-  static async create(attributeData) {
+  // 버프 생성 - 마스터 DB 사용
+  static async create(buffData) {
     try {
-      const { name, description, type, base_value = 0, max_value = 100 } = attributeData;
+      const { 
+        ids,
+        id_name,
+        name,
+        descriptions,
+        type,
+        duration,
+        effects,
+        icon
+      } = buffData;
       
       const query = `
-        INSERT INTO Attributes_attributes (name, description, type, base_value, max_value)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO Buffs_buffs (ids, id_name, name, descriptions, type, duration, effects, icon)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
-      const result = await dbHelpers.writeQuery(query, [name, description, type, base_value, max_value]);
+      const effectsString = typeof effects === 'object' ? JSON.stringify(effects) : effects;
+      
+      const result = await dbHelpers.writeQuery(query, [ids, id_name, name, descriptions, type, duration, effectsString, icon]);
       
       return {
         id: result.insertId,
-        ...attributeData
+        ...buffData,
+        effects: effectsString,
+        icon_url: icon ? `${process.env.R2_BASE_URL || 'https://r2.gihyeonofsoul.com'}/icons/${icon}.png` : null
       };
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
-        throw new Error('이미 존재하는 속성 이름입니다.');
+        throw new Error('이미 존재하는 버프 ID입니다.');
       }
       throw error;
     }
   }
 
-  // 속성 업데이트 - 마스터 DB 사용
+  // 버프 업데이트 - 마스터 DB 사용
   static async update(id, updateData) {
     try {
       const fields = [];
       const values = [];
-      
+
       Object.keys(updateData).forEach(key => {
         if (updateData[key] !== undefined) {
-          fields.push(`${key} = ?`);
-          values.push(updateData[key]);
+          if (key === 'effects' && typeof updateData[key] === 'object') {
+            fields.push(`${key} = ?`);
+            values.push(JSON.stringify(updateData[key]));
+          } else {
+            fields.push(`${key} = ?`);
+            values.push(updateData[key]);
+          }
         }
       });
-      
+
       if (fields.length === 0) {
         throw new Error('업데이트할 데이터가 없습니다.');
       }
-      
+
+      const query = `UPDATE Buffs_buffs SET ${fields.join(', ')} WHERE id = ?`;
       values.push(id);
-      
-      const query = `UPDATE Attributes_attributes SET ${fields.join(', ')} WHERE id = ?`;
-      
+
       const result = await dbHelpers.writeQuery(query, values);
       
       if (result.affectedRows === 0) {
-        throw new Error('속성을 찾을 수 없습니다.');
+        throw new Error('버프를 찾을 수 없습니다.');
       }
-      
-      return {
-        id,
-        ...updateData
-      };
+
+      return await this.findById(id);
     } catch (error) {
       throw error;
     }
   }
 
-  // 속성 삭제 - 마스터 DB 사용
+  // 버프 삭제 - 마스터 DB 사용
   static async delete(id) {
     try {
-      const query = 'DELETE FROM Attributes_attributes WHERE id = ?';
-      
+      const query = 'DELETE FROM Buffs_buffs WHERE id = ?';
       const result = await dbHelpers.writeQuery(query, [id]);
       
       if (result.affectedRows === 0) {
-        throw new Error('속성을 찾을 수 없습니다.');
+        throw new Error('버프를 찾을 수 없습니다.');
       }
       
-      return { id };
+      return { message: '버프가 성공적으로 삭제되었습니다.' };
     } catch (error) {
       throw error;
     }
   }
 
-  // 타입별 속성 조회 - 슬레이브 DB 사용
+  // 타입별 버프 조회 - 슬레이브 DB 사용
   static async findByType(type) {
     try {
-      const query = 'SELECT * FROM Attributes_attributes WHERE type = ? ORDER BY name';
+      const query = 'SELECT * FROM Buffs_buffs WHERE type = ?';
       const rows = await dbHelpers.readQuery(query, [type]);
       
-      return rows;
+      // 아이콘 URL 추가
+      const processedRows = rows.map(row => ({
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-buff')
+      }));
+      
+      return processedRows;
     } catch (error) {
       throw error;
     }
   }
 
-  // 속성 통계 조회 - 슬레이브 DB 사용
+  // 버프 통계 조회 - 슬레이브 DB 사용
   static async getStats() {
     try {
       const queries = [
-        'SELECT COUNT(*) as total FROM Attributes_attributes',
-        'SELECT type, COUNT(*) as count FROM Attributes_attributes GROUP BY type',
-        'SELECT AVG(base_value) as avg_base_value, MAX(max_value) as max_max_value FROM Attributes_attributes'
+        'SELECT COUNT(*) as total FROM Buffs_buffs',
+        'SELECT type, COUNT(*) as count FROM Buffs_buffs GROUP BY type',
+        'SELECT AVG(duration) as avg_duration FROM Buffs_buffs WHERE duration IS NOT NULL'
       ];
-      
-      const results = await Promise.all(
+
+      const [totalResult, typeResult, durationResult] = await Promise.all(
         queries.map(query => dbHelpers.readQuery(query))
       );
-      
+
       return {
-        total: results[0][0].total,
-        byType: results[1],
-        averages: results[2][0]
+        total: totalResult[0].total,
+        byType: typeResult,
+        avgDuration: durationResult[0].avg_duration || 0
       };
     } catch (error) {
       throw error;
@@ -207,4 +226,4 @@ class Attribute {
   }
 }
 
-module.exports = Attribute;
+module.exports = Buff;

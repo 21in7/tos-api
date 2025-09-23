@@ -8,6 +8,8 @@ class SkillController {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filters = {
+      ids: req.query.ids,
+      job_id: req.query.job_id,
       type: req.query.type,
       search: req.query.search
     };

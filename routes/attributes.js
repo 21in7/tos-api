@@ -7,7 +7,6 @@ const { handleValidationErrors, validatePagination, validateId } = require('../m
 // 모든 속성 조회 (페이지네이션, 필터링, 검색)
 router.get('/', 
   validatePagination,
-  attributeValidators.create,
   handleValidationErrors,
   attributeController.getAllAttributes
 );

@@ -1,101 +1,114 @@
-const { db } = require('../config/database');
+const { dbHelpers } = require('../config/database');
 const { calculatePagination } = require('../utils/response');
+const { generateIconUrl } = require('../utils/iconCache');
 
 class Skill {
-  // 모든 스킬 조회 (페이지네이션)
+  // 모든 스킬 조회 (페이지네이션) - 슬레이브 DB 사용
   static async findAll(page = 1, limit = 10, filters = {}) {
-    return new Promise((resolve, reject) => {
-      let query = 'SELECT * FROM skills WHERE 1=1';
-      let countQuery = 'SELECT COUNT(*) as total FROM skills WHERE 1=1';
-      const params = [];
+    let query = 'SELECT * FROM Skills_skills WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM Skills_skills WHERE 1=1';
+    const params = [];
 
-      // 필터 적용
-      if (filters.type) {
-        query += ' AND type = ?';
-        countQuery += ' AND type = ?';
-        params.push(filters.type);
-      }
+    // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
 
-      if (filters.search) {
-        query += ' AND (name LIKE ? OR description LIKE ?)';
-        countQuery += ' AND (name LIKE ? OR description LIKE ?)';
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
-      }
+    if (filters.job_id) {
+      query += ' AND job_id = ?';
+      countQuery += ' AND job_id = ?';
+      params.push(filters.job_id);
+    }
 
-      // 정렬
-      query += ' ORDER BY type, level, name';
+    if (filters.type) {
+      query += ' AND type = ?';
+      countQuery += ' AND type = ?';
+      params.push(filters.type);
+    }
 
-      // 페이지네이션
-      const pagination = calculatePagination(page, limit, 0);
-      query += ' LIMIT ? OFFSET ?';
-      params.push(pagination.limit, pagination.offset);
+    if (filters.search) {
+      query += ' AND (name LIKE ? OR id_name LIKE ?)';
+      countQuery += ' AND (name LIKE ? OR id_name LIKE ?)';
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
 
-      // 총 개수 조회
-      db.get(countQuery, params.slice(0, -2), (err, countResult) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    // 정렬
+    query += ' ORDER BY id DESC';
 
-        const total = countResult.total;
-        const finalPagination = calculatePagination(page, limit, total);
+    // 페이지네이션
+    const pagination = calculatePagination(page, limit, 0);
+    query += ' LIMIT ? OFFSET ?';
+    params.push(pagination.limit, pagination.offset);
 
-        // 데이터 조회
-        db.all(query, params, (err, rows) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+    try {
+      // 총 개수 조회 (슬레이브 DB)
+      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const total = countResult[0].total;
+      const finalPagination = calculatePagination(page, limit, total);
 
-          resolve({
-            data: rows,
-            pagination: finalPagination
-          });
-        });
-      });
-    });
+      // 데이터 조회 (슬레이브 DB)
+      const rows = await dbHelpers.readQuery(query, params);
+
+      // 아이콘 URL 추가
+      const processedRows = rows.map(row => ({
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-skill')
+      }));
+
+      return {
+        data: processedRows,
+        pagination: finalPagination
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // ID로 스킬 조회
+  // ID로 스킬 조회 - 슬레이브 DB 사용
   static async findById(id) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM skills WHERE id = ?';
+    try {
+      const query = 'SELECT * FROM Skills_skills WHERE id = ?';
+      const rows = await dbHelpers.readQuery(query, [id]);
       
-      db.get(query, [id], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (!row) {
-          reject(new Error('스킬을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve(row);
-      });
-    });
+      if (rows.length === 0) {
+        throw new Error('스킬을 찾을 수 없습니다.');
+      }
+      
+      const row = rows[0];
+      return {
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-skill')
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 이름으로 스킬 조회
+  // 이름으로 스킬 조회 - 슬레이브 DB 사용
   static async findByName(name) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM skills WHERE name = ?';
+    try {
+      const query = 'SELECT * FROM Skills_skills WHERE name = ?';
+      const rows = await dbHelpers.readQuery(query, [name]);
       
-      db.get(query, [name], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(row);
-      });
-    });
+      if (rows.length === 0) {
+        return null;
+      }
+      
+      const row = rows[0];
+      return {
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-skill')
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 스킬 생성
+  // 스킬 생성 - 마스터 DB 사용
   static async create(skillData) {
-    return new Promise((resolve, reject) => {
+    try {
       const { 
         name, 
         description, 
@@ -108,34 +121,30 @@ class Skill {
       } = skillData;
       
       const query = `
-        INSERT INTO skills (name, description, type, level, cooldown, mana_cost, damage, effects)
+        INSERT INTO Skills_skills (name, description, type, level, cooldown, mana_cost, damage, effects)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const effectsString = typeof effects === 'object' ? JSON.stringify(effects) : effects;
       
-      db.run(query, [name, description, type, level, cooldown, mana_cost, damage, effectsString], function(err) {
-        if (err) {
-          if (err.code === 'SQLITE_CONSTRAINT') {
-            reject(new Error('이미 존재하는 스킬 이름입니다.'));
-            return;
-          }
-          reject(err);
-          return;
-        }
-        
-        resolve({
-          id: this.lastID,
-          ...skillData,
-          effects: effectsString
-        });
-      });
-    });
+      const result = await dbHelpers.writeQuery(query, [name, description, type, level, cooldown, mana_cost, damage, effectsString]);
+      
+      return {
+        id: result.insertId,
+        ...skillData,
+        effects: effectsString
+      };
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new Error('이미 존재하는 스킬 이름입니다.');
+      }
+      throw error;
+    }
   }
 
-  // 스킬 업데이트
+  // 스킬 업데이트 - 마스터 DB 사용
   static async update(id, updateData) {
-    return new Promise((resolve, reject) => {
+    try {
       const fields = [];
       const values = [];
       
@@ -152,103 +161,82 @@ class Skill {
       });
       
       if (fields.length === 0) {
-        reject(new Error('업데이트할 데이터가 없습니다.'));
-        return;
+        throw new Error('업데이트할 데이터가 없습니다.');
       }
       
-      fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);
       
-      const query = `UPDATE skills SET ${fields.join(', ')} WHERE id = ?`;
+      const query = `UPDATE Skills_skills SET ${fields.join(', ')} WHERE id = ?`;
       
-      db.run(query, values, function(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (this.changes === 0) {
-          reject(new Error('스킬을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve({
-          id,
-          ...updateData,
-          updated_at: new Date().toISOString()
-        });
-      });
-    });
+      const result = await dbHelpers.writeQuery(query, values);
+      
+      if (result.affectedRows === 0) {
+        throw new Error('스킬을 찾을 수 없습니다.');
+      }
+      
+      return {
+        id,
+        ...updateData
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 스킬 삭제
+  // 스킬 삭제 - 마스터 DB 사용
   static async delete(id) {
-    return new Promise((resolve, reject) => {
-      const query = 'DELETE FROM skills WHERE id = ?';
+    try {
+      const query = 'DELETE FROM Skills_skills WHERE id = ?';
       
-      db.run(query, [id], function(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (this.changes === 0) {
-          reject(new Error('스킬을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve({ id });
-      });
-    });
+      const result = await dbHelpers.writeQuery(query, [id]);
+      
+      if (result.affectedRows === 0) {
+        throw new Error('스킬을 찾을 수 없습니다.');
+      }
+      
+      return { id };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 타입별 스킬 조회
+  // 타입별 스킬 조회 - 슬레이브 DB 사용
   static async findByType(type) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM skills WHERE type = ? ORDER BY level, name';
+    try {
+      const query = 'SELECT * FROM Skills_skills WHERE type = ? ORDER BY level, name';
+      const rows = await dbHelpers.readQuery(query, [type]);
       
-      db.all(query, [type], (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(rows);
-      });
-    });
+      return rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 스킬 통계 조회
+  // 스킬 통계 조회 - 슬레이브 DB 사용
   static async getStats() {
-    return new Promise((resolve, reject) => {
+    try {
       const queries = [
-        'SELECT COUNT(*) as total FROM skills',
-        'SELECT type, COUNT(*) as count FROM skills GROUP BY type',
-        'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM skills',
-        'SELECT AVG(mana_cost) as avg_mana, MIN(mana_cost) as min_mana, MAX(mana_cost) as max_mana FROM skills',
-        'SELECT AVG(damage) as avg_damage, MIN(damage) as min_damage, MAX(damage) as max_damage FROM skills'
+        'SELECT COUNT(*) as total FROM Skills_skills',
+        'SELECT type, COUNT(*) as count FROM Skills_skills GROUP BY type',
+        'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM Skills_skills',
+        'SELECT AVG(mana_cost) as avg_mana, MIN(mana_cost) as min_mana, MAX(mana_cost) as max_mana FROM Skills_skills',
+        'SELECT AVG(damage) as avg_damage, MIN(damage) as min_damage, MAX(damage) as max_damage FROM Skills_skills'
       ];
       
-      Promise.all(queries.map(query => 
-        new Promise((resolveQuery, rejectQuery) => {
-          db.all(query, [], (err, rows) => {
-            if (err) {
-              rejectQuery(err);
-              return;
-            }
-            resolveQuery(rows);
-          });
-        })
-      )).then(results => {
-        resolve({
-          total: results[0][0].total,
-          byType: results[1],
-          levelStats: results[2][0],
-          manaStats: results[3][0],
-          damageStats: results[4][0]
-        });
-      }).catch(reject);
-    });
+      const results = await Promise.all(
+        queries.map(query => dbHelpers.readQuery(query))
+      );
+      
+      return {
+        total: results[0][0].total,
+        byType: results[1],
+        levelStats: results[2][0],
+        manaStats: results[3][0],
+        damageStats: results[4][0]
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

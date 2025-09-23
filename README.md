@@ -10,7 +10,6 @@ Express.js로 구현된 Tavern of Soul 게임 데이터 관리 API입니다.
 - **Skills API**: 스킬 시스템 관리
 - **Jobs API**: 직업 시스템 관리
 - **Maps API**: 맵 데이터 관리
-- **Market API**: 거래소 기능
 - **Challenges API**: 챌린지 시스템
 - **Dashboard API**: 대시보드 통계
 - **Planner API**: 계획 도구

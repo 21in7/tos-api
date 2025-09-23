@@ -1,159 +1,150 @@
-const { db } = require('../config/database');
+const { dbHelpers } = require('../config/database');
 const { calculatePagination } = require('../utils/response');
+const { generateIconUrl } = require('../utils/iconCache');
 
 class Item {
-  // 모든 아이템 조회 (페이지네이션)
+  // 모든 아이템 조회 (페이지네이션) - 슬레이브 DB 사용
   static async findAll(page = 1, limit = 10, filters = {}) {
-    return new Promise((resolve, reject) => {
-      let query = 'SELECT * FROM items WHERE 1=1';
-      let countQuery = 'SELECT COUNT(*) as total FROM items WHERE 1=1';
-      const params = [];
+    let query = 'SELECT * FROM Items_items WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM Items_items WHERE 1=1';
+    const params = [];
 
-      // 필터 적용
-      if (filters.type) {
-        query += ' AND type = ?';
-        countQuery += ' AND type = ?';
-        params.push(filters.type);
-      }
+    // 필터 적용
+    if (filters.ids) {
+      query += ' AND ids = ?';
+      countQuery += ' AND ids = ?';
+      params.push(filters.ids);
+    }
 
-      if (filters.rarity) {
-        query += ' AND rarity = ?';
-        countQuery += ' AND rarity = ?';
-        params.push(filters.rarity);
-      }
+    if (filters.type) {
+      query += ' AND type = ?';
+      countQuery += ' AND type = ?';
+      params.push(filters.type);
+    }
 
-      if (filters.minLevel) {
-        query += ' AND level >= ?';
-        countQuery += ' AND level >= ?';
-        params.push(filters.minLevel);
-      }
+    if (filters.grade) {
+      query += ' AND grade = ?';
+      countQuery += ' AND grade = ?';
+      params.push(filters.grade);
+    }
 
-      if (filters.maxLevel) {
-        query += ' AND level <= ?';
-        countQuery += ' AND level <= ?';
-        params.push(filters.maxLevel);
-      }
+    if (filters.search) {
+      query += ' AND (name LIKE ? OR id_name LIKE ?)';
+      countQuery += ' AND (name LIKE ? OR id_name LIKE ?)';
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
 
-      if (filters.search) {
-        query += ' AND (name LIKE ? OR description LIKE ?)';
-        countQuery += ' AND (name LIKE ? OR description LIKE ?)';
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
-      }
+    // 정렬
+    query += ' ORDER BY id DESC';
 
-      // 정렬
-      query += ' ORDER BY created_at DESC';
+    // 페이지네이션
+    const pagination = calculatePagination(page, limit, 0);
+    query += ' LIMIT ? OFFSET ?';
+    params.push(pagination.limit, pagination.offset);
 
-      // 페이지네이션
-      const pagination = calculatePagination(page, limit, 0);
-      query += ' LIMIT ? OFFSET ?';
-      params.push(pagination.limit, pagination.offset);
+    try {
+      // 총 개수 조회 (슬레이브 DB)
+      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const total = countResult[0].total;
+      const finalPagination = calculatePagination(page, limit, total);
 
-      // 총 개수 조회
-      db.get(countQuery, params.slice(0, -2), (err, countResult) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      // 데이터 조회 (슬레이브 DB)
+      const rows = await dbHelpers.readQuery(query, params);
 
-        const total = countResult.total;
-        const finalPagination = calculatePagination(page, limit, total);
+      // 아이콘 URL 추가 (캐시 기반)
+      const processedRows = rows.map(row => ({
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
+      }));
 
-        // 데이터 조회
-        db.all(query, params, (err, rows) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          resolve({
-            data: rows,
-            pagination: finalPagination
-          });
-        });
-      });
-    });
+      return {
+        data: processedRows,
+        pagination: finalPagination
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // ID로 아이템 조회
+  // ID로 아이템 조회 - 슬레이브 DB 사용
   static async findById(id) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM items WHERE id = ?';
+    try {
+      const query = 'SELECT * FROM Items_items WHERE id = ?';
+      const rows = await dbHelpers.readQuery(query, [id]);
       
-      db.get(query, [id], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (!row) {
-          reject(new Error('아이템을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve(row);
-      });
-    });
+      if (rows.length === 0) {
+        throw new Error('아이템을 찾을 수 없습니다.');
+      }
+      
+      const row = rows[0];
+      return {
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 이름으로 아이템 조회
+  // 이름으로 아이템 조회 - 슬레이브 DB 사용
   static async findByName(name) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM items WHERE name = ?';
+    try {
+      const query = 'SELECT * FROM Items_items WHERE name = ?';
+      const rows = await dbHelpers.readQuery(query, [name]);
       
-      db.get(query, [name], (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(row);
-      });
-    });
+      if (rows.length === 0) {
+        return null;
+      }
+      
+      const row = rows[0];
+      return {
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 아이템 생성
+  // 아이템 생성 - 마스터 DB 사용
   static async create(itemData) {
-    return new Promise((resolve, reject) => {
+    try {
       const { 
-        name, 
-        description, 
-        type, 
-        rarity = 'common', 
-        level = 1, 
-        stats = '{}', 
-        price = 0, 
-        stackable = true 
+        ids,
+        id_name,
+        name,
+        descriptions,
+        type,
+        grade,
+        icon,
+        cooldown,
+        weight,
+        tradability
       } = itemData;
       
       const query = `
-        INSERT INTO items (name, description, type, rarity, level, stats, price, stackable)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Items_items (ids, id_name, name, descriptions, type, grade, icon, cooldown, weight, tradability)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
-      const statsString = typeof stats === 'object' ? JSON.stringify(stats) : stats;
+      const result = await dbHelpers.writeQuery(query, [ids, id_name, name, descriptions, type, grade, icon, cooldown, weight, tradability]);
       
-      db.run(query, [name, description, type, rarity, level, statsString, price, stackable], function(err) {
-        if (err) {
-          if (err.code === 'SQLITE_CONSTRAINT') {
-            reject(new Error('이미 존재하는 아이템 이름입니다.'));
-            return;
-          }
-          reject(err);
-          return;
-        }
-        
-        resolve({
-          id: this.lastID,
-          ...itemData,
-          stats: statsString
-        });
-      });
-    });
+      return {
+        id: result.insertId,
+        ...itemData,
+        icon_url: icon ? `${process.env.R2_BASE_URL || 'https://r2.gihyeonofsoul.com'}/icons/${icon}.png` : null
+      };
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new Error('이미 존재하는 아이템 ID입니다.');
+      }
+      throw error;
+    }
   }
 
-  // 아이템 업데이트
+  // 아이템 업데이트 - 마스터 DB 사용
   static async update(id, updateData) {
-    return new Promise((resolve, reject) => {
+    try {
       const fields = [];
       const values = [];
       
@@ -162,6 +153,9 @@ class Item {
           if (key === 'stats' && typeof updateData[key] === 'object') {
             fields.push(`${key} = ?`);
             values.push(JSON.stringify(updateData[key]));
+          } else if (key === 'type') {
+            fields.push('item_type_id = (SELECT id FROM Items_item_type WHERE name = ?)');
+            values.push(updateData[key]);
           } else {
             fields.push(`${key} = ?`);
             values.push(updateData[key]);
@@ -170,135 +164,112 @@ class Item {
       });
       
       if (fields.length === 0) {
-        reject(new Error('업데이트할 데이터가 없습니다.'));
-        return;
+        throw new Error('업데이트할 데이터가 없습니다.');
       }
       
-      fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);
       
-      const query = `UPDATE items SET ${fields.join(', ')} WHERE id = ?`;
+      const query = `UPDATE Items_items SET ${fields.join(', ')} WHERE id = ?`;
       
-      db.run(query, values, function(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (this.changes === 0) {
-          reject(new Error('아이템을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve({
-          id,
-          ...updateData,
-          updated_at: new Date().toISOString()
-        });
-      });
-    });
+      const result = await dbHelpers.writeQuery(query, values);
+      
+      if (result.affectedRows === 0) {
+        throw new Error('아이템을 찾을 수 없습니다.');
+      }
+      
+      return {
+        id,
+        ...updateData
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 아이템 삭제
+  // 아이템 삭제 - 마스터 DB 사용
   static async delete(id) {
-    return new Promise((resolve, reject) => {
-      const query = 'DELETE FROM items WHERE id = ?';
+    try {
+      const query = 'DELETE FROM Items_items WHERE id = ?';
       
-      db.run(query, [id], function(err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        if (this.changes === 0) {
-          reject(new Error('아이템을 찾을 수 없습니다.'));
-          return;
-        }
-        
-        resolve({ id });
-      });
-    });
+      const result = await dbHelpers.writeQuery(query, [id]);
+      
+      if (result.affectedRows === 0) {
+        throw new Error('아이템을 찾을 수 없습니다.');
+      }
+      
+      return { id };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 타입별 아이템 조회
+  // 타입별 아이템 조회 - 슬레이브 DB 사용
   static async findByType(type) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM items WHERE type = ? ORDER BY level, name';
+    try {
+      const query = `
+        SELECT i.*, it.name as type_name 
+        FROM Items_items i 
+        JOIN Items_item_type it ON i.item_type_id = it.id 
+        WHERE it.name = ? 
+        ORDER BY i.level, i.name
+      `;
+      const rows = await dbHelpers.readQuery(query, [type]);
       
-      db.all(query, [type], (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(rows);
-      });
-    });
+      return rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 희귀도별 아이템 조회
+  // 희귀도별 아이템 조회 - 슬레이브 DB 사용
   static async findByRarity(rarity) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM items WHERE rarity = ? ORDER BY level DESC, name';
+    try {
+      const query = 'SELECT * FROM Items_items WHERE rarity = ? ORDER BY level DESC, name';
+      const rows = await dbHelpers.readQuery(query, [rarity]);
       
-      db.all(query, [rarity], (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(rows);
-      });
-    });
+      return rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 레벨 범위별 아이템 조회
+  // 레벨 범위별 아이템 조회 - 슬레이브 DB 사용
   static async findByLevelRange(minLevel, maxLevel) {
-    return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM items WHERE level >= ? AND level <= ? ORDER BY level, name';
+    try {
+      const query = 'SELECT * FROM Items_items WHERE level >= ? AND level <= ? ORDER BY level, name';
+      const rows = await dbHelpers.readQuery(query, [minLevel, maxLevel]);
       
-      db.all(query, [minLevel, maxLevel], (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        
-        resolve(rows);
-      });
-    });
+      return rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  // 아이템 통계 조회
+  // 아이템 통계 조회 - 슬레이브 DB 사용
   static async getStats() {
-    return new Promise((resolve, reject) => {
+    try {
       const queries = [
-        'SELECT COUNT(*) as total FROM items',
-        'SELECT type, COUNT(*) as count FROM items GROUP BY type',
-        'SELECT rarity, COUNT(*) as count FROM items GROUP BY rarity',
-        'SELECT AVG(price) as avg_price, MIN(price) as min_price, MAX(price) as max_price FROM items',
-        'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM items'
+        'SELECT COUNT(*) as total FROM Items_items',
+        'SELECT it.name as type, COUNT(*) as count FROM Items_items i JOIN Items_item_type it ON i.item_type_id = it.id GROUP BY it.name',
+        'SELECT rarity, COUNT(*) as count FROM Items_items GROUP BY rarity',
+        'SELECT AVG(price) as avg_price, MIN(price) as min_price, MAX(price) as max_price FROM Items_items',
+        'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM Items_items'
       ];
       
-      Promise.all(queries.map(query => 
-        new Promise((resolveQuery, rejectQuery) => {
-          db.all(query, [], (err, rows) => {
-            if (err) {
-              rejectQuery(err);
-              return;
-            }
-            resolveQuery(rows);
-          });
-        })
-      )).then(results => {
-        resolve({
-          total: results[0][0].total,
-          byType: results[1],
-          byRarity: results[2],
-          priceStats: results[3][0],
-          levelStats: results[4][0]
-        });
-      }).catch(reject);
-    });
+      const results = await Promise.all(
+        queries.map(query => dbHelpers.readQuery(query))
+      );
+      
+      return {
+        total: results[0][0].total,
+        byType: results[1],
+        byRarity: results[2],
+        priceStats: results[3][0],
+        levelStats: results[4][0]
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
