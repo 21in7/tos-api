@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
 const { body, validationResult } = require('express-validator');
+const { dbHelpers } = require('../config/database');
+const { generateIconUrl } = require('../utils/iconCache');
 
 // 모든 직업 조회 (페이지네이션)
 router.get('/', async (req, res) => {
@@ -36,11 +38,30 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ID로 직업 조회
+// ID로 직업 조회 (ids 또는 id 필드로 조회)
 router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    const result = await Job.findById(id);
+    
+    // 먼저 ids 필드로 조회 시도
+    let result;
+    try {
+      result = await Job.findById(id);
+    } catch (error) {
+      // ids로 찾지 못하면 실제 id 필드로 조회 시도
+      const query = 'SELECT * FROM Jobs_jobs WHERE id = ?';
+      const rows = await dbHelpers.readQuery(query, [id]);
+      
+      if (rows.length === 0) {
+        throw new Error('직업을 찾을 수 없습니다.');
+      }
+      
+      const row = rows[0];
+      result = {
+        ...row,
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-job')
+      };
+    }
 
     res.json({
       success: true,
