@@ -206,6 +206,61 @@ class TosApiMcpServer {
             }
           },
           {
+            name: 'get_buffs',
+            description: '버프 목록을 조회합니다. 페이지네이션과 필터링을 지원합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                page: { type: 'number', description: '페이지 번호 (기본값: 1)' },
+                limit: { type: 'number', description: '페이지당 항목 수 (기본값: 10)' },
+                ids: { type: 'string', description: '버프 ID 필터' },
+                type: { type: 'string', description: '버프 타입' },
+                search: { type: 'string', description: '검색어' }
+              }
+            }
+          },
+          {
+            name: 'get_buff_by_id',
+            description: 'ids로 특정 버프를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: '버프 ids' }
+              },
+              required: ['id']
+            }
+          },
+          {
+            name: 'get_buff_by_name',
+            description: '이름으로 버프를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: '버프 이름' }
+              },
+              required: ['name']
+            }
+          },
+          {
+            name: 'get_buffs_by_type',
+            description: '타입별 버프를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', description: '버프 타입' }
+              },
+              required: ['type']
+            }
+          },
+          {
+            name: 'get_buff_stats',
+            description: '버프 통계를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
             name: 'get_attributes',
             description: '속성 목록을 조회합니다. 페이지네이션과 필터링을 지원합니다.',
             inputSchema: {
@@ -331,6 +386,21 @@ class TosApiMcpServer {
             break;
           case 'get_monster_stats':
             response = await this.makeApiCall('/api/monsters/stats', 'GET');
+            break;
+          case 'get_buffs':
+            response = await this.makeApiCall('/api/buffs', 'GET', args);
+            break;
+          case 'get_buff_by_id':
+            response = await this.makeApiCall(`/api/buffs/${args.id}`, 'GET');
+            break;
+          case 'get_buff_by_name':
+            response = await this.makeApiCall(`/api/buffs/name/${encodeURIComponent(args.name)}`, 'GET');
+            break;
+          case 'get_buffs_by_type':
+            response = await this.makeApiCall(`/api/buffs/type/${args.type}`, 'GET');
+            break;
+          case 'get_buff_stats':
+            response = await this.makeApiCall('/api/buffs/stats/overview', 'GET');
             break;
           case 'get_attributes':
             response = await this.makeApiCall('/api/attributes', 'GET', args);
