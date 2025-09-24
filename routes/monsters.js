@@ -30,7 +30,7 @@ router.get('/level/:minLevel/:maxLevel',
   monsterController.getMonstersByLevelRange
 );
 
-// ID로 몬스터 조회
+// ids로 몬스터 조회
 router.get('/:id',
   validateId,
   handleValidationErrors,
@@ -42,25 +42,5 @@ router.get('/name/:name',
   monsterController.getMonsterByName
 );
 
-// 새 몬스터 생성
-router.post('/',
-  monsterValidators.create,
-  handleValidationErrors,
-  monsterController.createMonster
-);
-
-// 몬스터 업데이트
-router.put('/:id',
-  validateId,
-  handleValidationErrors,
-  monsterController.updateMonster
-);
-
-// 몬스터 삭제
-router.delete('/:id',
-  validateId,
-  handleValidationErrors,
-  monsterController.deleteMonster
-);
 
 module.exports = router;

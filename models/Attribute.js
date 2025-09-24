@@ -60,11 +60,11 @@ class Attribute {
     }
   }
 
-  // ID로 속성 조회 - 슬레이브 DB 사용
-  static async findById(id) {
+  // ids로 속성 조회 - 슬레이브 DB 사용
+  static async findById(ids) {
     try {
-      const query = 'SELECT * FROM Attributes_attributes WHERE id = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const query = 'SELECT * FROM Attributes_attributes WHERE ids = ?';
+      const rows = await dbHelpers.readQuery(query, [ids]);
       
       if (rows.length === 0) {
         throw new Error('속성을 찾을 수 없습니다.');

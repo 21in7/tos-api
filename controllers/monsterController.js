@@ -11,7 +11,11 @@ class MonsterController {
       ids: req.query.ids,
       minLevel: req.query.minLevel ? parseInt(req.query.minLevel) : undefined,
       maxLevel: req.query.maxLevel ? parseInt(req.query.maxLevel) : undefined,
-      search: req.query.search
+      race: req.query.race,
+      rank: req.query.rank,
+      element: req.query.element,
+      search: req.query.search,
+      validOnly: req.query.validOnly !== 'false' // 기본값: true (유효한 데이터만)
     };
 
     const result = await Monster.findAll(page, limit, filters);
@@ -19,7 +23,7 @@ class MonsterController {
     paginatedResponse(res, result.data, result.pagination, '몬스터 목록을 조회했습니다.');
   });
 
-  // ID로 몬스터 조회
+  // ids로 몬스터 조회
   getMonsterById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
@@ -47,30 +51,6 @@ class MonsterController {
     successResponse(res, monsters, `레벨 ${minLevel}-${maxLevel} 몬스터들을 조회했습니다.`);
   });
 
-  // 새 몬스터 생성
-  createMonster = asyncHandler(async (req, res) => {
-    const monsterData = req.body;
-    
-    const newMonster = await Monster.create(monsterData);
-    createdResponse(res, newMonster, '몬스터가 생성되었습니다.');
-  });
-
-  // 몬스터 업데이트
-  updateMonster = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    const updatedMonster = await Monster.update(id, updateData);
-    updatedResponse(res, updatedMonster, '몬스터가 업데이트되었습니다.');
-  });
-
-  // 몬스터 삭제
-  deleteMonster = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    
-    await Monster.delete(id);
-    deletedResponse(res, '몬스터가 삭제되었습니다.');
-  });
 
   // 몬스터 통계 조회
   getMonsterStats = asyncHandler(async (req, res) => {

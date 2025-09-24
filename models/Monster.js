@@ -9,6 +9,28 @@ class Monster {
     let countQuery = 'SELECT COUNT(*) as total FROM Monsters_monsters WHERE 1=1';
     const params = [];
 
+    // 기본 필터: 빈 데이터 제외
+    query += ' AND name IS NOT NULL AND name != ""';
+    query += ' AND ids IS NOT NULL AND ids != ""';
+    query += ' AND level > 0';
+    query += ' AND name NOT LIKE "%임시%"';
+    query += ' AND name NOT LIKE "%boss_%"';
+    query += ' AND name NOT LIKE "%DynamicObject%"';
+    query += ' AND name NOT LIKE "%Symbol_%"';
+    query += ' AND name NOT LIKE "%( 임시)%"';
+    query += ' AND name NOT LIKE "%Blizzard%"';
+    query += ' AND rank NOT IN ("Material", "MISC")';
+    countQuery += ' AND name IS NOT NULL AND name != ""';
+    countQuery += ' AND ids IS NOT NULL AND ids != ""';
+    countQuery += ' AND level > 0';
+    countQuery += ' AND name NOT LIKE "%임시%"';
+    countQuery += ' AND name NOT LIKE "%boss_%"';
+    countQuery += ' AND name NOT LIKE "%DynamicObject%"';
+    countQuery += ' AND name NOT LIKE "%Symbol_%"';
+    countQuery += ' AND name NOT LIKE "%( 임시)%"';
+    countQuery += ' AND name NOT LIKE "%Blizzard%"';
+    countQuery += ' AND rank NOT IN ("Material", "MISC")';
+
     // 필터 적용
     if (filters.ids) {
       query += ' AND ids = ?';
@@ -28,10 +50,34 @@ class Monster {
       params.push(filters.maxLevel);
     }
 
+    if (filters.race) {
+      query += ' AND race = ?';
+      countQuery += ' AND race = ?';
+      params.push(filters.race);
+    }
+
+    if (filters.rank) {
+      query += ' AND rank = ?';
+      countQuery += ' AND rank = ?';
+      params.push(filters.rank);
+    }
+
+    if (filters.element) {
+      query += ' AND element = ?';
+      countQuery += ' AND element = ?';
+      params.push(filters.element);
+    }
+
     if (filters.search) {
       query += ' AND (name LIKE ? OR id_name LIKE ?)';
       countQuery += ' AND (name LIKE ? OR id_name LIKE ?)';
       params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+
+    // 추가 필터: 유효한 데이터만 조회
+    if (filters.validOnly !== false) {
+      query += ' AND hp > 0';
+      countQuery += ' AND hp > 0';
     }
 
     // 정렬
@@ -66,11 +112,11 @@ class Monster {
     }
   }
 
-  // ID로 몬스터 조회 - 슬레이브 DB 사용
-  static async findById(id) {
+  // ids로 몬스터 조회 - 슬레이브 DB 사용
+  static async findById(ids) {
     try {
-      const query = 'SELECT * FROM Monsters_monsters WHERE id = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const query = 'SELECT * FROM Monsters_monsters WHERE ids = ?';
+      const rows = await dbHelpers.readQuery(query, [ids]);
       
       if (rows.length === 0) {
         throw new Error('몬스터를 찾을 수 없습니다.');
@@ -106,100 +152,6 @@ class Monster {
     }
   }
 
-  // 몬스터 생성 - 마스터 DB 사용
-  static async create(monsterData) {
-    try {
-      const { 
-        name, 
-        description, 
-        level = 1, 
-        hp = 100, 
-        attack = 10, 
-        defense = 5, 
-        speed = 10, 
-        exp_reward = 10, 
-        loot_table = '{}' 
-      } = monsterData;
-      
-      const query = `
-        INSERT INTO Monsters_monsters (name, description, level, hp, attack, defense, speed, exp_reward, loot_table)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      
-      const lootTableString = typeof loot_table === 'object' ? JSON.stringify(loot_table) : loot_table;
-      
-      const result = await dbHelpers.writeQuery(query, [name, description, level, hp, attack, defense, speed, exp_reward, lootTableString]);
-      
-      return {
-        id: result.insertId,
-        ...monsterData,
-        loot_table: lootTableString
-      };
-    } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        throw new Error('이미 존재하는 몬스터 이름입니다.');
-      }
-      throw error;
-    }
-  }
-
-  // 몬스터 업데이트 - 마스터 DB 사용
-  static async update(id, updateData) {
-    try {
-      const fields = [];
-      const values = [];
-      
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] !== undefined) {
-          if (key === 'loot_table' && typeof updateData[key] === 'object') {
-            fields.push(`${key} = ?`);
-            values.push(JSON.stringify(updateData[key]));
-          } else {
-            fields.push(`${key} = ?`);
-            values.push(updateData[key]);
-          }
-        }
-      });
-      
-      if (fields.length === 0) {
-        throw new Error('업데이트할 데이터가 없습니다.');
-      }
-      
-      values.push(id);
-      
-      const query = `UPDATE Monsters_monsters SET ${fields.join(', ')} WHERE id = ?`;
-      
-      const result = await dbHelpers.writeQuery(query, values);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('몬스터를 찾을 수 없습니다.');
-      }
-      
-      return {
-        id,
-        ...updateData
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // 몬스터 삭제 - 마스터 DB 사용
-  static async delete(id) {
-    try {
-      const query = 'DELETE FROM Monsters_monsters WHERE id = ?';
-      
-      const result = await dbHelpers.writeQuery(query, [id]);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('몬스터를 찾을 수 없습니다.');
-      }
-      
-      return { id };
-    } catch (error) {
-      throw error;
-    }
-  }
 
   // 레벨 범위별 몬스터 조회 - 슬레이브 DB 사용
   static async findByLevelRange(minLevel, maxLevel) {
@@ -220,8 +172,12 @@ class Monster {
         'SELECT COUNT(*) as total FROM Monsters_monsters',
         'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM Monsters_monsters',
         'SELECT AVG(hp) as avg_hp, MIN(hp) as min_hp, MAX(hp) as max_hp FROM Monsters_monsters',
-        'SELECT AVG(attack) as avg_attack, MIN(attack) as min_attack, MAX(attack) as max_attack FROM Monsters_monsters',
-        'SELECT AVG(exp_reward) as avg_exp, MIN(exp_reward) as min_exp, MAX(exp_reward) as max_exp FROM Monsters_monsters'
+        'SELECT AVG(patk_max) as avg_patk, MIN(patk_max) as min_patk, MAX(patk_max) as max_patk FROM Monsters_monsters',
+        'SELECT AVG(matk_max) as avg_matk, MIN(matk_max) as min_matk, MAX(matk_max) as max_matk FROM Monsters_monsters',
+        'SELECT AVG(exp) as avg_exp, MIN(exp) as min_exp, MAX(exp) as max_exp FROM Monsters_monsters',
+        'SELECT race, COUNT(*) as count FROM Monsters_monsters WHERE race IS NOT NULL GROUP BY race',
+        'SELECT rank, COUNT(*) as count FROM Monsters_monsters WHERE rank IS NOT NULL GROUP BY rank',
+        'SELECT element, COUNT(*) as count FROM Monsters_monsters WHERE element IS NOT NULL GROUP BY element'
       ];
       
       const results = await Promise.all(
@@ -232,8 +188,12 @@ class Monster {
         total: results[0][0].total,
         levelStats: results[1][0],
         hpStats: results[2][0],
-        attackStats: results[3][0],
-        expStats: results[4][0]
+        patkStats: results[3][0],
+        matkStats: results[4][0],
+        expStats: results[5][0],
+        raceDistribution: results[6],
+        rankDistribution: results[7],
+        elementDistribution: results[8]
       };
     } catch (error) {
       throw error;

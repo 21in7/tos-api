@@ -18,7 +18,7 @@ class AttributeController {
     paginatedResponse(res, result.data, result.pagination, '특성 목록을 조회했습니다.');
   });
 
-  // ID로 특성 조회
+  // ids로 특성 조회
   getAttributeById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
