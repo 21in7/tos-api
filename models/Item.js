@@ -5,6 +5,10 @@ const { generateIconUrl } = require('../utils/iconCache');
 class Item {
   // 모든 아이템 조회 (페이지네이션) - 슬레이브 DB 사용
   static async findAll(page = 1, limit = 10, filters = {}) {
+    // 기본값으로 장비 정보 포함 (프론트엔드 편의성)
+    if (filters.includeEquipment === undefined) {
+      filters.includeEquipment = true;
+    }
     let query = 'SELECT * FROM Items_items WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Items_items WHERE 1=1';
     const params = [];
@@ -57,6 +61,23 @@ class Item {
         icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
       }));
 
+      // 장비 정보 포함 여부
+      if (filters.includeEquipment) {
+        for (let i = 0; i < processedRows.length; i++) {
+          const item = processedRows[i];
+          if (item.type === 'Equipment' || item.type === 'WEAPON' || item.type === 'ARMOR' || 
+              item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor') {
+            const equipment = await this.getEquipmentInfo(item.id);
+            if (equipment) {
+              processedRows[i] = {
+                ...item,
+                equipment: equipment
+              };
+            }
+          }
+        }
+      }
+
       return {
         data: processedRows,
         pagination: finalPagination
@@ -66,28 +87,51 @@ class Item {
     }
   }
 
-  // ID로 아이템 조회 - 슬레이브 DB 사용
-  static async findById(id) {
+  // ID로 아이템 조회 - 슬레이브 DB 사용 (id 또는 ids로 조회)
+  static async findById(id, includeEquipment = true) {
     try {
-      const query = 'SELECT * FROM Items_items WHERE id = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      // 먼저 ids로 조회 시도
+      let query = 'SELECT * FROM Items_items WHERE ids = ?';
+      let params = [id];
+      let rows = await dbHelpers.readQuery(query, params);
+      
+      // ids로 찾지 못했으면 id로 조회 시도
+      if (rows.length === 0) {
+        const isNumeric = /^\d+$/.test(id);
+        if (isNumeric) {
+          query = 'SELECT * FROM Items_items WHERE id = ?';
+          params = [parseInt(id)];
+          rows = await dbHelpers.readQuery(query, params);
+        }
+      }
       
       if (rows.length === 0) {
         throw new Error('아이템을 찾을 수 없습니다.');
       }
       
       const row = rows[0];
-      return {
+      const result = {
         ...row,
         icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
       };
+
+      // 장비 정보 포함
+      if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
+          row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
+        const equipment = await this.getEquipmentInfo(row.id);
+        if (equipment) {
+          result.equipment = equipment;
+        }
+      }
+      
+      return result;
     } catch (error) {
       throw error;
     }
   }
 
   // 이름으로 아이템 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, includeEquipment = true) {
     try {
       const query = 'SELECT * FROM Items_items WHERE name = ?';
       const rows = await dbHelpers.readQuery(query, [name]);
@@ -97,10 +141,21 @@ class Item {
       }
       
       const row = rows[0];
-      return {
+      const result = {
         ...row,
         icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
       };
+
+      // 장비 정보 포함
+      if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
+          row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
+        const equipment = await this.getEquipmentInfo(row.id);
+        if (equipment) {
+          result.equipment = equipment;
+        }
+      }
+      
+      return result;
     } catch (error) {
       throw error;
     }
@@ -245,15 +300,42 @@ class Item {
     }
   }
 
+  // 장비 정보 조회 - 슬레이브 DB 사용
+  static async getEquipmentInfo(itemId) {
+    try {
+      // 장비 기본 정보 조회
+      const equipmentQuery = 'SELECT * FROM Items_equipments WHERE item_id = ?';
+      const equipmentRows = await dbHelpers.readQuery(equipmentQuery, [itemId]);
+      
+      if (equipmentRows.length === 0) {
+        return null;
+      }
+      
+      const equipment = equipmentRows[0];
+      
+      // 장비 보너스 정보 조회
+      const bonusQuery = 'SELECT * FROM Items_equipment_bonus WHERE equipment_id = ?';
+      const bonusRows = await dbHelpers.readQuery(bonusQuery, [itemId]);
+      
+      return {
+        ...equipment,
+        bonuses: bonusRows
+      };
+    } catch (error) {
+      console.error('장비 정보 조회 오류:', error);
+      return null;
+    }
+  }
+
   // 아이템 통계 조회 - 슬레이브 DB 사용
   static async getStats() {
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Items_items',
-        'SELECT it.name as type, COUNT(*) as count FROM Items_items i JOIN Items_item_type it ON i.item_type_id = it.id GROUP BY it.name',
-        'SELECT rarity, COUNT(*) as count FROM Items_items GROUP BY rarity',
-        'SELECT AVG(price) as avg_price, MIN(price) as min_price, MAX(price) as max_price FROM Items_items',
-        'SELECT AVG(level) as avg_level, MIN(level) as min_level, MAX(level) as max_level FROM Items_items'
+        'SELECT type, COUNT(*) as count FROM Items_items GROUP BY type',
+        'SELECT grade, COUNT(*) as count FROM Items_items GROUP BY grade',
+        'SELECT COUNT(*) as equipment_count FROM Items_equipments',
+        'SELECT COUNT(*) as bonus_count FROM Items_equipment_bonus'
       ];
       
       const results = await Promise.all(
@@ -263,9 +345,9 @@ class Item {
       return {
         total: results[0][0].total,
         byType: results[1],
-        byRarity: results[2],
-        priceStats: results[3][0],
-        levelStats: results[4][0]
+        byGrade: results[2],
+        equipmentCount: results[3][0].equipment_count,
+        bonusCount: results[4][0].bonus_count
       };
     } catch (error) {
       throw error;

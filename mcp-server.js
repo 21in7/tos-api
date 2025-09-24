@@ -260,6 +260,54 @@ class TosApiMcpServer {
               properties: {}
             }
           },
+          // 아이템 도구들
+          {
+            name: 'get_items',
+            description: '모든 아이템을 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                page: { type: 'number', description: '페이지 번호 (기본값: 1)' },
+                limit: { type: 'number', description: '페이지당 항목 수 (기본값: 10)' },
+                type: { type: 'string', description: '아이템 타입 필터' },
+                grade: { type: 'string', description: '아이템 등급 필터' },
+                search: { type: 'string', description: '검색어 (이름 또는 ID)' },
+                includeEquipment: { type: 'boolean', description: '장비 정보 포함 여부 (기본값: false)' }
+              }
+            }
+          },
+          {
+            name: 'get_item_by_id',
+            description: 'ids로 특정 아이템을 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: '아이템 ids' },
+                includeEquipment: { type: 'boolean', description: '장비 정보 포함 여부 (기본값: false)' }
+              },
+              required: ['id']
+            }
+          },
+          {
+            name: 'get_item_by_name',
+            description: '이름으로 아이템을 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: '아이템 이름' },
+                includeEquipment: { type: 'boolean', description: '장비 정보 포함 여부 (기본값: false)' }
+              },
+              required: ['name']
+            }
+          },
+          {
+            name: 'get_item_stats',
+            description: '아이템 통계를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
           {
             name: 'get_attributes',
             description: '속성 목록을 조회합니다. 페이지네이션과 필터링을 지원합니다.',
@@ -401,6 +449,34 @@ class TosApiMcpServer {
             break;
           case 'get_buff_stats':
             response = await this.makeApiCall('/api/buffs/stats/overview', 'GET');
+            break;
+          
+          // 아이템 도구들
+          case 'get_items':
+            const itemsParams = new URLSearchParams();
+            if (args.page) itemsParams.append('page', args.page);
+            if (args.limit) itemsParams.append('limit', args.limit);
+            if (args.type) itemsParams.append('type', args.type);
+            if (args.grade) itemsParams.append('grade', args.grade);
+            if (args.search) itemsParams.append('search', args.search);
+            if (args.includeEquipment) itemsParams.append('includeEquipment', args.includeEquipment);
+            response = await this.makeApiCall(`/api/items?${itemsParams.toString()}`, 'GET');
+            break;
+          
+          case 'get_item_by_id':
+            const itemParams = new URLSearchParams();
+            if (args.includeEquipment) itemParams.append('includeEquipment', args.includeEquipment);
+            response = await this.makeApiCall(`/api/items/${args.id}?${itemParams.toString()}`, 'GET');
+            break;
+          
+          case 'get_item_by_name':
+            const itemNameParams = new URLSearchParams();
+            if (args.includeEquipment) itemNameParams.append('includeEquipment', args.includeEquipment);
+            response = await this.makeApiCall(`/api/items/name/${encodeURIComponent(args.name)}?${itemNameParams.toString()}`, 'GET');
+            break;
+          
+          case 'get_item_stats':
+            response = await this.makeApiCall('/api/items/stats/overview', 'GET');
             break;
           case 'get_attributes':
             response = await this.makeApiCall('/api/attributes', 'GET', args);

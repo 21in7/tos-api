@@ -7,8 +7,8 @@ import { prettyJSON } from 'hono/pretty-json';
 // 라우트 임포트
 import attributes from './routes/attributes.js';
 import monsters from './routes/monsters.js';
+import items from './routes/items.js';
 // import buffs from './routes/buffs.js';
-// import items from './routes/items.js';
 // import skills from './routes/skills.js';
 // import jobs from './routes/jobs.js';
 // import maps from './routes/maps.js';
@@ -50,8 +50,8 @@ app.get('/', (c) => {
 // API 라우트 설정
 app.route('/api/attributes', attributes);
 app.route('/api/monsters', monsters);
+app.route('/api/items', items);
 // app.route('/api/buffs', buffs);
-// app.route('/api/items', items);
 // app.route('/api/skills', skills);
 // app.route('/api/jobs', jobs);
 // app.route('/api/maps', maps);

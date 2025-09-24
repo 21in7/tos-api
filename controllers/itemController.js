@@ -10,10 +10,9 @@ class ItemController {
     const filters = {
       ids: req.query.ids,
       type: req.query.type,
-      rarity: req.query.rarity,
-      minLevel: req.query.minLevel ? parseInt(req.query.minLevel) : undefined,
-      maxLevel: req.query.maxLevel ? parseInt(req.query.maxLevel) : undefined,
-      search: req.query.search
+      grade: req.query.grade,
+      search: req.query.search,
+      includeEquipment: req.query.includeEquipment !== 'false' // 기본값 true, false로 명시적 설정 시에만 제외
     };
 
     const result = await Item.findAll(page, limit, filters);
@@ -24,16 +23,18 @@ class ItemController {
   // ID로 아이템 조회
   getItemById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
-    const item = await Item.findById(id);
+    const item = await Item.findById(id, includeEquipment);
     successResponse(res, item, '아이템을 조회했습니다.');
   });
 
   // 이름으로 아이템 조회
   getItemByName = asyncHandler(async (req, res) => {
     const { name } = req.params;
+    const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
-    const item = await Item.findByName(name);
+    const item = await Item.findByName(name, includeEquipment);
     if (!item) {
       return errorResponse(res, '아이템을 찾을 수 없습니다.', 404);
     }
