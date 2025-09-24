@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "tos-api": {
+      "command": "node",
+      "args": ["E:\\develop\\tos-api\\mcp-server.js"],
+      "env": {
+        "API_BASE_URL": "http://localhost:3000"
+      }
+    }
+  }
+}

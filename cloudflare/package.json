@@ -1,0 +1,31 @@
+{
+  "name": "tos-api-cloudflare",
+  "version": "1.0.0",
+  "description": "Tavern of Soul API - Cloudflare Workers version",
+  "main": "worker.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "test": "wrangler dev --local",
+    "start": "wrangler dev"
+  },
+  "dependencies": {
+    "hono": "^3.12.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "api",
+    "game",
+    "tavern-of-soul"
+  ],
+  "author": "",
+  "license": "MIT"
+}
