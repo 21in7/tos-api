@@ -94,7 +94,7 @@ class Attribute {
       
       // 관련 jobs 조회
       const jobsQuery = `
-        SELECT j.id, j.ids, j.id_name, j.name, j.descriptions, j.type, j.icon
+        SELECT j.id, j.ids, j.id_name, j.name, j.descriptions, j.job_tree, j.icon
         FROM Attributes_attributes_job aaj
         JOIN Jobs_jobs j ON aaj.jobs_id = j.id
         WHERE aaj.attributes_id = ?
@@ -103,7 +103,7 @@ class Attribute {
       
       // 관련 skills 조회
       const skillsQuery = `
-        SELECT s.id, s.ids, s.id_name, s.name, s.descriptions, s.type, s.job_id, s.icon
+        SELECT s.id, s.ids, s.id_name, s.name, s.descriptions, s.job_id, s.icon
         FROM Attributes_attributes_skill aas
         JOIN Skills_skills s ON aas.skills_id = s.id
         WHERE aas.attributes_id = ?

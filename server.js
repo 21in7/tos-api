@@ -30,9 +30,18 @@ app.use(morgan('combined'));
 // 요청 제한 설정
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15분
-  max: 100, // 최대 100 요청
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 프로덕션: 100, 개발: 1000
   message: {
     error: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.'
+  },
+  standardHeaders: true, // `RateLimit-*` 헤더 반환
+  legacyHeaders: false, // `X-RateLimit-*` 헤더 비활성화
+  skip: (req, res) => {
+    // 개발 환경에서 localhost는 제한 제외
+    if (process.env.NODE_ENV !== 'production' && req.ip === '127.0.0.1') {
+      return true;
+    }
+    return false;
   }
 });
 app.use('/api/', limiter);
