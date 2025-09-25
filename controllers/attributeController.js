@@ -26,6 +26,14 @@ class AttributeController {
     successResponse(res, attribute, '특성을 조회했습니다.');
   });
 
+  // ids로 특성 조회 (관련 jobs와 skills 포함)
+  getAttributeByIdWithRelations = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const attribute = await Attribute.findByIdWithRelations(id);
+    successResponse(res, attribute, '특성과 관련 정보를 조회했습니다.');
+  });
+
   // 이름으로 특성 조회
   getAttributeByName = asyncHandler(async (req, res) => {
     const { name } = req.params;

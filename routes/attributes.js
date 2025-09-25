@@ -35,6 +35,13 @@ router.get('/:id',
   attributeController.getAttributeById
 );
 
+// ID로 속성 조회 (관련 jobs와 skills 포함)
+router.get('/:id/relations',
+  validateId,
+  handleValidationErrors,
+  attributeController.getAttributeByIdWithRelations
+);
+
 // 이름으로 속성 조회
 router.get('/name/:name',
   attributeController.getAttributeByName
