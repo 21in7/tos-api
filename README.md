@@ -1,6 +1,6 @@
-# Tavern of Soul API
+# Gihyeon of Soul API
 
-Express.js로 구현된 Tavern of Soul 게임 데이터 관리 API입니다.
+Express.js로 구현된 Gihyeon of Soul 게임 데이터 관리 API입니다.
 
 ## 🚀 주요 기능
 
