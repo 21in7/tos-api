@@ -1,7 +1,7 @@
-# Tavern of Soul API Documentation
+# Gihyeon of Soul API Documentation
 
 ## Overview
-The Tavern of Soul API is a comprehensive REST API service that provides game data management for the Tavern of Soul game. This API offers endpoints for managing jobs, items, monsters, skills, attributes, buffs, maps, and more.
+The Gihyeon of Soul API is a comprehensive REST API service that provides game data management for the Tree of Savior game. This API offers endpoints for managing jobs, items, monsters, skills, attributes, buffs, maps, and more.
 
 ## Language Support
 This API supports multiple languages through different base URLs:
