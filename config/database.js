@@ -2,10 +2,10 @@ const mysql = require('mysql2/promise');
 
 // 데이터베이스 설정 템플릿
 const createDbConfig = (database) => ({
-  host: process.env.DB_MASTER_HOST || '217.142.235.27',
+  host: process.env.DB_MASTER_HOST || '',
   port: process.env.DB_MASTER_PORT || 3306,
   user: process.env.DB_MASTER_USER || 'gihyeon',
-  password: process.env.DB_MASTER_PASSWORD || '1234',
+  password: process.env.DB_MASTER_PASSWORD || '',
   database: database,
   charset: 'utf8mb4',
   acquireTimeout: 60000,
