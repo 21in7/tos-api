@@ -145,10 +145,7 @@ GET /api/jobs/stats/overview
 GET /itos/api/jobs/stats/overview
 ```
 
-#### Create Job
-```http
-POST /api/jobs
-```
+
 
 **Request Body:**
 ```json
@@ -161,16 +158,6 @@ POST /api/jobs
   "description": "string",
   "icon": "string"
 }
-```
-
-#### Update Job
-```http
-PUT /api/jobs/{id}
-```
-
-#### Delete Job
-```http
-DELETE /api/jobs/{id}
 ```
 
 ### 2. Items API
@@ -237,20 +224,7 @@ GET /api/items/types
 GET /api/items/rarities
 ```
 
-#### Create Item
-```http
-POST /api/items
-```
 
-#### Update Item
-```http
-PUT /api/items/{id}
-```
-
-#### Delete Item
-```http
-DELETE /api/items/{id}
-```
 
 ### 3. Monsters API
 
@@ -348,21 +322,6 @@ GET /api/skills/stats
 #### Get Skill Types
 ```http
 GET /api/skills/types
-```
-
-#### Create Skill
-```http
-POST /api/skills
-```
-
-#### Update Skill
-```http
-PUT /api/skills/{id}
-```
-
-#### Delete Skill
-```http
-DELETE /api/skills/{id}
 ```
 
 ### 5. Attributes API
@@ -476,29 +435,6 @@ GET /api/dashboard/status
 GET /api/dashboard/tables
 ```
 
-### 9. Challenges API
-
-#### Get All Challenges
-```http
-# Korean data
-GET /ktos/api/challenges
-GET /api/challenges
-
-# English data
-GET /itos/api/challenges
-```
-
-### 10. Planner API
-
-#### Get Planner Data
-```http
-# Korean data
-GET /ktos/api/planner
-GET /api/planner
-
-# English data
-GET /itos/api/planner
-```
 
 ## Pagination
 
@@ -578,7 +514,7 @@ curl -X GET "https://your-domain.com/itos/api/skills?job_id=123"
   "id": 1,
   "ids": "swordman_1",
   "id_name": "Swordman",
-  "name": "검사", // Korean name from KTOS DB
+  "name": "소드맨", // Korean name from KTOS DB
   "job_tree": "swordman",
   "is_starter": 1,
   "description": "Basic sword-wielding class",
