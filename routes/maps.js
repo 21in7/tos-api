@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Map = require('../models/Map');
 const { body, validationResult } = require('express-validator');
+const { getDbHelpers } = require('../config/database');
 
 // 모든 맵 조회 (페이지네이션)
 router.get('/', async (req, res) => {
@@ -19,7 +20,11 @@ router.get('/', async (req, res) => {
     if (req.query.star) filters.star = parseInt(req.query.star);
     if (req.query.search) filters.search = req.query.search;
 
-    const result = await Map.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Map.findAll(page, limit, filters, dbHelpers);
 
     res.json({
       success: true,

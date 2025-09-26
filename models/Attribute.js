@@ -4,7 +4,9 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Attribute {
   // 모든 속성 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    // dbHelpers가 제공되지 않으면 기본 dbHelpers 사용
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Attributes_attributes WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Attributes_attributes WHERE 1=1';
     const params = [];
@@ -38,12 +40,12 @@ class Attribute {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -61,10 +63,11 @@ class Attribute {
   }
 
   // ids로 속성 조회 - 슬레이브 DB 사용
-  static async findById(ids) {
+  static async findById(ids, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [ids]);
+      const rows = await db.readQuery(query, [ids]);
       
       if (rows.length === 0) {
         throw new Error('속성을 찾을 수 없습니다.');
@@ -84,7 +87,7 @@ class Attribute {
   static async findByIdWithRelations(ids) {
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [ids]);
+      const rows = await db.readQuery(query, [ids]);
       
       if (rows.length === 0) {
         throw new Error('속성을 찾을 수 없습니다.');
@@ -99,7 +102,7 @@ class Attribute {
         JOIN Jobs_jobs j ON aaj.jobs_id = j.id
         WHERE aaj.attributes_id = ?
       `;
-      const jobs = await dbHelpers.readQuery(jobsQuery, [attribute.id]);
+      const jobs = await db.readQuery(jobsQuery, [attribute.id]);
       
       // 관련 skills 조회
       const skillsQuery = `
@@ -108,7 +111,7 @@ class Attribute {
         JOIN Skills_skills s ON aas.skills_id = s.id
         WHERE aas.attributes_id = ?
       `;
-      const skills = await dbHelpers.readQuery(skillsQuery, [attribute.id]);
+      const skills = await db.readQuery(skillsQuery, [attribute.id]);
       
       // jobs와 skills에 아이콘 URL 추가
       const processedJobs = jobs.map(job => ({
@@ -136,7 +139,7 @@ class Attribute {
   static async findByName(name) {
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
@@ -233,7 +236,7 @@ class Attribute {
   static async findByType(type) {
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE type = ? ORDER BY name';
-      const rows = await dbHelpers.readQuery(query, [type]);
+      const rows = await db.readQuery(query, [type]);
       
       return rows;
     } catch (error) {
@@ -251,7 +254,7 @@ class Attribute {
       ];
       
       const results = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
       
       return {

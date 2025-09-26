@@ -1,10 +1,14 @@
-const { dbHelpers } = require('../config/database');
+const { dbHelpers, getDbHelpers } = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 class DashboardController {
   // 대시보드 전체 통계 조회 - 슬레이브 DB 사용
   getDashboardStats = asyncHandler(async (req, res) => {
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
     const queries = [
       'SELECT COUNT(*) as total FROM Attributes_attributes',
       'SELECT COUNT(*) as total FROM Buffs_buffs',

@@ -1,6 +1,7 @@
 const Skill = require('../models/Skill');
 const { successResponse, errorResponse, paginatedResponse, createdResponse, updatedResponse, deletedResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { getDbHelpers } = require('../config/database');
 
 class SkillController {
   // 모든 스킬 조회
@@ -14,7 +15,11 @@ class SkillController {
       search: req.query.search
     };
 
-    const result = await Skill.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Skill.findAll(page, limit, filters, dbHelpers);
     
     paginatedResponse(res, result.data, result.pagination, '스킬 목록을 조회했습니다.');
   });
@@ -23,7 +28,11 @@ class SkillController {
   getSkillById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const skill = await Skill.findById(id);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const skill = await Skill.findById(id, dbHelpers);
     successResponse(res, skill, '스킬을 조회했습니다.');
   });
 
@@ -31,7 +40,11 @@ class SkillController {
   getSkillByName = asyncHandler(async (req, res) => {
     const { name } = req.params;
     
-    const skill = await Skill.findByName(name);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const skill = await Skill.findByName(name, dbHelpers);
     if (!skill) {
       return errorResponse(res, '스킬을 찾을 수 없습니다.', 404);
     }
@@ -43,7 +56,11 @@ class SkillController {
   getSkillsByType = asyncHandler(async (req, res) => {
     const { type } = req.params;
     
-    const skills = await Skill.findByType(type);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const skills = await Skill.findByType(type, dbHelpers);
     successResponse(res, skills, `${type} 타입 스킬들을 조회했습니다.`);
   });
 
@@ -74,7 +91,11 @@ class SkillController {
 
   // 스킬 통계 조회
   getSkillStats = asyncHandler(async (req, res) => {
-    const stats = await Skill.getStats();
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const stats = await Skill.getStats(dbHelpers);
     successResponse(res, stats, '스킬 통계를 조회했습니다.');
   });
 
@@ -90,7 +111,11 @@ class SkillController {
     const limit = parseInt(req.query.limit) || 10;
     const filters = { search: searchTerm };
     
-    const result = await Skill.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Skill.findAll(page, limit, filters, dbHelpers);
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);
   });
 

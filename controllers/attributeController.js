@@ -1,6 +1,7 @@
 const Attribute = require('../models/Attribute');
 const { successResponse, errorResponse, paginatedResponse, createdResponse, updatedResponse, deletedResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { getDbHelpers } = require('../config/database');
 
 class AttributeController {
   // 모든 특성 조회
@@ -13,7 +14,11 @@ class AttributeController {
       search: req.query.search
     };
 
-    const result = await Attribute.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Attribute.findAll(page, limit, filters, dbHelpers);
     
     paginatedResponse(res, result.data, result.pagination, '특성 목록을 조회했습니다.');
   });
@@ -22,7 +27,11 @@ class AttributeController {
   getAttributeById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const attribute = await Attribute.findById(id);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const attribute = await Attribute.findById(id, dbHelpers);
     successResponse(res, attribute, '특성을 조회했습니다.');
   });
 

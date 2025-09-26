@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
 const { body, validationResult } = require('express-validator');
-const { dbHelpers } = require('../config/database');
+const { dbHelpers, getDbHelpers } = require('../config/database');
 const { generateIconUrl } = require('../utils/iconCache');
 
 // 모든 직업 조회 (페이지네이션)
@@ -18,7 +18,11 @@ router.get('/', async (req, res) => {
     if (req.query.is_starter !== undefined) filters.is_starter = parseInt(req.query.is_starter);
     if (req.query.search) filters.search = req.query.search;
 
-    const result = await Job.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Job.findAll(page, limit, filters, dbHelpers);
 
     res.json({
       success: true,
@@ -43,10 +47,14 @@ router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
     
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
     // 먼저 ids 필드로 조회 시도
     let result;
     try {
-      result = await Job.findById(id);
+      result = await Job.findById(id, dbHelpers);
     } catch (error) {
       // ids로 찾지 못하면 실제 id 필드로 조회 시도
       const query = 'SELECT * FROM Jobs_jobs WHERE id = ?';
@@ -84,7 +92,12 @@ router.get('/:id', async (req, res) => {
 router.get('/name/:name', async (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name);
-    const result = await Job.findByName(name);
+    
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Job.findByName(name, dbHelpers);
 
     if (!result) {
       return res.status(404).json({

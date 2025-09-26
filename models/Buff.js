@@ -4,7 +4,8 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Buff {
   // 모든 버프 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Buffs_buffs WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Buffs_buffs WHERE 1=1';
     const params = [];
@@ -38,12 +39,12 @@ class Buff {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -64,7 +65,7 @@ class Buff {
   static async findById(id) {
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const rows = await db.readQuery(query, [id]);
       
       if (rows.length === 0) {
         throw new Error('버프를 찾을 수 없습니다.');
@@ -84,7 +85,7 @@ class Buff {
   static async findByName(name) {
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
@@ -194,7 +195,7 @@ class Buff {
   static async findByType(type) {
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE type = ?';
-      const rows = await dbHelpers.readQuery(query, [type]);
+      const rows = await db.readQuery(query, [type]);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -218,7 +219,7 @@ class Buff {
       ];
 
       const [totalResult, typeResult, durationResult] = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
 
       return {

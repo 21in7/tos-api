@@ -4,7 +4,9 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Job {
   // 모든 직업 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    // dbHelpers가 제공되지 않으면 기본 dbHelpers 사용
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Jobs_jobs WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Jobs_jobs WHERE 1=1';
     const params = [];
@@ -44,12 +46,12 @@ class Job {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -67,10 +69,11 @@ class Job {
   }
 
   // ID로 직업 조회 - 슬레이브 DB 사용 (ids 컬럼으로 조회)
-  static async findById(id) {
+  static async findById(id, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Jobs_jobs WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const rows = await db.readQuery(query, [id]);
       
       if (rows.length === 0) {
         throw new Error('직업을 찾을 수 없습니다.');
@@ -87,10 +90,11 @@ class Job {
   }
 
   // 이름으로 직업 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Jobs_jobs WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
@@ -193,10 +197,11 @@ class Job {
   }
 
   // 직업 트리별 조회 - 슬레이브 DB 사용
-  static async findByJobTree(jobTree) {
+  static async findByJobTree(jobTree, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Jobs_jobs WHERE job_tree = ?';
-      const rows = await dbHelpers.readQuery(query, [jobTree]);
+      const rows = await db.readQuery(query, [jobTree]);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -211,10 +216,11 @@ class Job {
   }
 
   // 스타터 직업 조회 - 슬레이브 DB 사용
-  static async findStarterJobs() {
+  static async findStarterJobs(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Jobs_jobs WHERE is_starter = 1';
-      const rows = await dbHelpers.readQuery(query);
+      const rows = await db.readQuery(query);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -229,7 +235,8 @@ class Job {
   }
 
   // 직업 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Jobs_jobs',
@@ -239,7 +246,7 @@ class Job {
       ];
 
       const [totalResult, jobTreeResult, starterResult, nonStarterResult] = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
 
       return {

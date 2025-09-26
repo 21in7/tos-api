@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Buff = require('../models/Buff');
 const { body, validationResult } = require('express-validator');
+const { getDbHelpers } = require('../config/database');
 
 // 모든 버프 조회 (페이지네이션)
 router.get('/', async (req, res) => {
@@ -15,7 +16,11 @@ router.get('/', async (req, res) => {
     if (req.query.type) filters.type = req.query.type;
     if (req.query.search) filters.search = req.query.search;
 
-    const result = await Buff.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Buff.findAll(page, limit, filters, dbHelpers);
 
     res.json({
       success: true,
@@ -40,8 +45,12 @@ router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
     
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
     // 숫자인지 확인 (ids 컬럼이 VARCHAR이므로)
-    const result = await Buff.findById(id);
+    const result = await Buff.findById(id, dbHelpers);
 
     res.json({
       success: true,
@@ -64,7 +73,12 @@ router.get('/:id', async (req, res) => {
 router.get('/name/:name', async (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name);
-    const result = await Buff.findByName(name);
+    
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Buff.findByName(name, dbHelpers);
 
     if (!result) {
       return res.status(404).json({

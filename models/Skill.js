@@ -4,7 +4,9 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Skill {
   // 모든 스킬 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    // dbHelpers가 제공되지 않으면 기본 dbHelpers 사용
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Skills_skills WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Skills_skills WHERE 1=1';
     const params = [];
@@ -44,12 +46,12 @@ class Skill {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -67,10 +69,11 @@ class Skill {
   }
 
   // ID로 스킬 조회 - 슬레이브 DB 사용
-  static async findById(id) {
+  static async findById(id, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Skills_skills WHERE id = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const rows = await db.readQuery(query, [id]);
       
       if (rows.length === 0) {
         throw new Error('스킬을 찾을 수 없습니다.');
@@ -87,10 +90,11 @@ class Skill {
   }
 
   // 이름으로 스킬 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Skills_skills WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
@@ -201,10 +205,11 @@ class Skill {
   }
 
   // 타입별 스킬 조회 - 슬레이브 DB 사용
-  static async findByType(type) {
+  static async findByType(type, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Skills_skills WHERE type = ? ORDER BY level, name';
-      const rows = await dbHelpers.readQuery(query, [type]);
+      const rows = await db.readQuery(query, [type]);
       
       return rows;
     } catch (error) {
@@ -213,7 +218,8 @@ class Skill {
   }
 
   // 스킬 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Skills_skills',
@@ -224,7 +230,7 @@ class Skill {
       ];
       
       const results = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
       
       return {

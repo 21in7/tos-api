@@ -1,6 +1,7 @@
 const Item = require('../models/Item');
 const { successResponse, errorResponse, paginatedResponse, createdResponse, updatedResponse, deletedResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { getDbHelpers } = require('../config/database');
 
 class ItemController {
   // 모든 아이템 조회
@@ -15,7 +16,11 @@ class ItemController {
       includeEquipment: req.query.includeEquipment !== 'false' // 기본값 true, false로 명시적 설정 시에만 제외
     };
 
-    const result = await Item.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Item.findAll(page, limit, filters, dbHelpers);
     
     paginatedResponse(res, result.data, result.pagination, '아이템 목록을 조회했습니다.');
   });
@@ -25,7 +30,11 @@ class ItemController {
     const { id } = req.params;
     const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
-    const item = await Item.findById(id, includeEquipment);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const item = await Item.findById(id, includeEquipment, dbHelpers);
     successResponse(res, item, '아이템을 조회했습니다.');
   });
 
@@ -34,7 +43,11 @@ class ItemController {
     const { name } = req.params;
     const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
-    const item = await Item.findByName(name, includeEquipment);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const item = await Item.findByName(name, includeEquipment, dbHelpers);
     if (!item) {
       return errorResponse(res, '아이템을 찾을 수 없습니다.', 404);
     }

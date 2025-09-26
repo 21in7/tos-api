@@ -1,6 +1,7 @@
 const Monster = require('../models/Monster');
 const { successResponse, errorResponse, paginatedResponse, createdResponse, updatedResponse, deletedResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { getDbHelpers } = require('../config/database');
 
 class MonsterController {
   // 모든 몬스터 조회
@@ -18,7 +19,11 @@ class MonsterController {
       validOnly: req.query.validOnly !== 'false' // 기본값: true (유효한 데이터만)
     };
 
-    const result = await Monster.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Monster.findAll(page, limit, filters, dbHelpers);
     
     paginatedResponse(res, result.data, result.pagination, '몬스터 목록을 조회했습니다.');
   });
@@ -27,7 +32,11 @@ class MonsterController {
   getMonsterById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const monster = await Monster.findById(id);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const monster = await Monster.findById(id, dbHelpers);
     successResponse(res, monster, '몬스터를 조회했습니다.');
   });
 
@@ -35,7 +44,11 @@ class MonsterController {
   getMonsterByName = asyncHandler(async (req, res) => {
     const { name } = req.params;
     
-    const monster = await Monster.findByName(name);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const monster = await Monster.findByName(name, dbHelpers);
     if (!monster) {
       return errorResponse(res, '몬스터를 찾을 수 없습니다.', 404);
     }
@@ -47,14 +60,22 @@ class MonsterController {
   getMonstersByLevelRange = asyncHandler(async (req, res) => {
     const { minLevel, maxLevel } = req.params;
     
-    const monsters = await Monster.findByLevelRange(parseInt(minLevel), parseInt(maxLevel));
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const monsters = await Monster.findByLevelRange(parseInt(minLevel), parseInt(maxLevel), dbHelpers);
     successResponse(res, monsters, `레벨 ${minLevel}-${maxLevel} 몬스터들을 조회했습니다.`);
   });
 
 
   // 몬스터 통계 조회
   getMonsterStats = asyncHandler(async (req, res) => {
-    const stats = await Monster.getStats();
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const stats = await Monster.getStats(dbHelpers);
     successResponse(res, stats, '몬스터 통계를 조회했습니다.');
   });
 
@@ -70,7 +91,11 @@ class MonsterController {
     const limit = parseInt(req.query.limit) || 10;
     const filters = { search: searchTerm };
     
-    const result = await Monster.findAll(page, limit, filters);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Monster.findAll(page, limit, filters, dbHelpers);
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);
   });
 }

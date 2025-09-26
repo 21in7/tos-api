@@ -4,7 +4,8 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Map {
   // 모든 맵 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Maps_maps WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Maps_maps WHERE 1=1';
     const params = [];
@@ -62,12 +63,12 @@ class Map {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -88,7 +89,7 @@ class Map {
   static async findById(id) {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [id]);
+      const rows = await db.readQuery(query, [id]);
       
       if (rows.length === 0) {
         throw new Error('맵을 찾을 수 없습니다.');
@@ -108,7 +109,7 @@ class Map {
   static async findByName(name) {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
@@ -216,7 +217,7 @@ class Map {
   static async findByType(type) {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE type = ?';
-      const rows = await dbHelpers.readQuery(query, [type]);
+      const rows = await db.readQuery(query, [type]);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -234,7 +235,7 @@ class Map {
   static async findByLevel(level) {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE level = ?';
-      const rows = await dbHelpers.readQuery(query, [level]);
+      const rows = await db.readQuery(query, [level]);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -252,7 +253,7 @@ class Map {
   static async findCMMaps() {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE has_cm = 1';
-      const rows = await dbHelpers.readQuery(query);
+      const rows = await db.readQuery(query);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -270,7 +271,7 @@ class Map {
   static async findWarpMaps() {
     try {
       const query = 'SELECT * FROM Maps_maps WHERE has_warp = 1';
-      const rows = await dbHelpers.readQuery(query);
+      const rows = await db.readQuery(query);
       
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -297,7 +298,7 @@ class Map {
       ];
 
       const [totalResult, typeResult, levelResult, cmResult, warpResult, starResult] = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
 
       return {

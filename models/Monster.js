@@ -4,7 +4,9 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Monster {
   // 모든 몬스터 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    // dbHelpers가 제공되지 않으면 기본 dbHelpers 사용
+    const db = dbHelpers || require('../config/database').dbHelpers;
     let query = 'SELECT * FROM Monsters_monsters WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM Monsters_monsters WHERE 1=1';
     const params = [];
@@ -90,12 +92,12 @@ class Monster {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가
       const processedRows = rows.map(row => ({
@@ -112,40 +114,122 @@ class Monster {
     }
   }
 
-  // ids로 몬스터 조회 - 슬레이브 DB 사용
-  static async findById(ids) {
+  // ids로 몬스터 조회 - 슬레이브 DB 사용 (드롭 아이템과 스킬 정보 포함)
+  static async findById(ids, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Monsters_monsters WHERE ids = ?';
-      const rows = await dbHelpers.readQuery(query, [ids]);
+      const rows = await db.readQuery(query, [ids]);
       
       if (rows.length === 0) {
         throw new Error('몬스터를 찾을 수 없습니다.');
       }
       
       const row = rows[0];
+      
+      // 드롭 아이템 정보 조회
+      const dropsQuery = `
+        SELECT 
+          md.chance,
+          md.qty_min,
+          md.qty_max,
+          i.id as item_id,
+          i.ids as item_ids,
+          i.id_name as item_id_name,
+          i.name as item_name,
+          i.grade as item_grade,
+          i.type as item_type
+        FROM Monsters_item_monster md
+        LEFT JOIN Items_items i ON md.item_id = i.id
+        WHERE md.monster_id = ?
+        ORDER BY md.chance DESC, i.name
+      `;
+      const drops = await db.readQuery(dropsQuery, [row.id]);
+      
+      // 스킬 정보 조회
+      const skillsQuery = `
+        SELECT 
+          sm.ids as skill_ids,
+          sm.id_name as skill_id_name,
+          sm.name as skill_name,
+          sm.element as skill_element,
+          sm.cooldown as skill_cooldown,
+          sm.sfr as skill_sfr,
+          sm.aar as skill_aar,
+          sm.hit_count as skill_hit_count
+        FROM Monsters_skill_monster_monsters msm
+        LEFT JOIN Monsters_skill_monster sm ON msm.skill_monster_id = sm.id
+        WHERE msm.monsters_id = ?
+        ORDER BY sm.name
+      `;
+      const skills = await db.readQuery(skillsQuery, [row.id]);
+      
       return {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-monster')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-monster'),
+        drops: drops,
+        skills: skills
       };
     } catch (error) {
       throw error;
     }
   }
 
-  // 이름으로 몬스터 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  // 이름으로 몬스터 조회 - 슬레이브 DB 사용 (드롭 아이템과 스킬 정보 포함)
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Monsters_monsters WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
       }
       
       const row = rows[0];
+      
+      // 드롭 아이템 정보 조회
+      const dropsQuery = `
+        SELECT 
+          md.chance,
+          md.qty_min,
+          md.qty_max,
+          i.id as item_id,
+          i.ids as item_ids,
+          i.id_name as item_id_name,
+          i.name as item_name,
+          i.grade as item_grade,
+          i.type as item_type
+        FROM Monsters_item_monster md
+        LEFT JOIN Items_items i ON md.item_id = i.id
+        WHERE md.monster_id = ?
+        ORDER BY md.chance DESC, i.name
+      `;
+      const drops = await db.readQuery(dropsQuery, [row.id]);
+      
+      // 스킬 정보 조회
+      const skillsQuery = `
+        SELECT 
+          sm.ids as skill_ids,
+          sm.id_name as skill_id_name,
+          sm.name as skill_name,
+          sm.element as skill_element,
+          sm.cooldown as skill_cooldown,
+          sm.sfr as skill_sfr,
+          sm.aar as skill_aar,
+          sm.hit_count as skill_hit_count
+        FROM Monsters_skill_monster_monsters msm
+        LEFT JOIN Monsters_skill_monster sm ON msm.skill_monster_id = sm.id
+        WHERE msm.monsters_id = ?
+        ORDER BY sm.name
+      `;
+      const skills = await db.readQuery(skillsQuery, [row.id]);
+      
       return {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-monster')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-monster'),
+        drops: drops,
+        skills: skills
       };
     } catch (error) {
       throw error;
@@ -154,10 +238,11 @@ class Monster {
 
 
   // 레벨 범위별 몬스터 조회 - 슬레이브 DB 사용
-  static async findByLevelRange(minLevel, maxLevel) {
+  static async findByLevelRange(minLevel, maxLevel, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Monsters_monsters WHERE level >= ? AND level <= ? ORDER BY level, name';
-      const rows = await dbHelpers.readQuery(query, [minLevel, maxLevel]);
+      const rows = await db.readQuery(query, [minLevel, maxLevel]);
       
       return rows;
     } catch (error) {
@@ -166,7 +251,8 @@ class Monster {
   }
 
   // 몬스터 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Monsters_monsters',
@@ -181,7 +267,7 @@ class Monster {
       ];
       
       const results = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
       
       return {

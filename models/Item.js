@@ -4,7 +4,9 @@ const { generateIconUrl } = require('../utils/iconCache');
 
 class Item {
   // 모든 아이템 조회 (페이지네이션) - 슬레이브 DB 사용
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  static async findAll(page = 1, limit = 10, filters = {}, dbHelpers = null) {
+    // dbHelpers가 제공되지 않으면 기본 dbHelpers 사용
+    const db = dbHelpers || require('../config/database').dbHelpers;
     // 기본값으로 장비 정보 포함 (프론트엔드 편의성)
     if (filters.includeEquipment === undefined) {
       filters.includeEquipment = true;
@@ -48,12 +50,12 @@ class Item {
 
     try {
       // 총 개수 조회 (슬레이브 DB)
-      const countResult = await dbHelpers.readQuery(countQuery, params.slice(0, -2));
+      const countResult = await db.readQuery(countQuery, params.slice(0, -2));
       const total = countResult[0].total;
       const finalPagination = calculatePagination(page, limit, total);
 
       // 데이터 조회 (슬레이브 DB)
-      const rows = await dbHelpers.readQuery(query, params);
+      const rows = await db.readQuery(query, params);
 
       // 아이콘 URL 추가 (캐시 기반)
       const processedRows = rows.map(row => ({
@@ -87,13 +89,14 @@ class Item {
     }
   }
 
-  // ID로 아이템 조회 - 슬레이브 DB 사용 (id 또는 ids로 조회)
-  static async findById(id, includeEquipment = true) {
+  // ID로 아이템 조회 - 슬레이브 DB 사용 (id 또는 ids로 조회, 드롭 몬스터 정보 포함)
+  static async findById(id, includeEquipment = true, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       // 먼저 ids로 조회 시도
       let query = 'SELECT * FROM Items_items WHERE ids = ?';
       let params = [id];
-      let rows = await dbHelpers.readQuery(query, params);
+      let rows = await db.readQuery(query, params);
       
       // ids로 찾지 못했으면 id로 조회 시도
       if (rows.length === 0) {
@@ -101,7 +104,7 @@ class Item {
         if (isNumeric) {
           query = 'SELECT * FROM Items_items WHERE id = ?';
           params = [parseInt(id)];
-          rows = await dbHelpers.readQuery(query, params);
+          rows = await db.readQuery(query, params);
         }
       }
       
@@ -110,9 +113,31 @@ class Item {
       }
       
       const row = rows[0];
+      
+      // 드롭 몬스터 정보 조회
+      const droppedByQuery = `
+        SELECT 
+          md.chance,
+          md.qty_min,
+          md.qty_max,
+          m.id as monster_id,
+          m.ids as monster_ids,
+          m.id_name as monster_id_name,
+          m.name as monster_name,
+          m.level as monster_level,
+          m.rank as monster_rank,
+          m.race as monster_race
+        FROM Monsters_item_monster md
+        LEFT JOIN Monsters_monsters m ON md.monster_id = m.id
+        WHERE md.item_id = ?
+        ORDER BY md.chance DESC, m.name
+      `;
+      const droppedBy = await db.readQuery(droppedByQuery, [row.id]);
+      
       const result = {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-item'),
+        dropped_by: droppedBy
       };
 
       // 장비 정보 포함
@@ -130,20 +155,43 @@ class Item {
     }
   }
 
-  // 이름으로 아이템 조회 - 슬레이브 DB 사용
-  static async findByName(name, includeEquipment = true) {
+  // 이름으로 아이템 조회 - 슬레이브 DB 사용 (드롭 몬스터 정보 포함)
+  static async findByName(name, includeEquipment = true, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Items_items WHERE name = ?';
-      const rows = await dbHelpers.readQuery(query, [name]);
+      const rows = await db.readQuery(query, [name]);
       
       if (rows.length === 0) {
         return null;
       }
       
       const row = rows[0];
+      
+      // 드롭 몬스터 정보 조회
+      const droppedByQuery = `
+        SELECT 
+          md.chance,
+          md.qty_min,
+          md.qty_max,
+          m.id as monster_id,
+          m.ids as monster_ids,
+          m.id_name as monster_id_name,
+          m.name as monster_name,
+          m.level as monster_level,
+          m.rank as monster_rank,
+          m.race as monster_race
+        FROM Monsters_item_monster md
+        LEFT JOIN Monsters_monsters m ON md.monster_id = m.id
+        WHERE md.item_id = ?
+        ORDER BY md.chance DESC, m.name
+      `;
+      const droppedBy = await db.readQuery(droppedByQuery, [row.id]);
+      
       const result = {
         ...row,
-        icon_url: generateIconUrl(row.icon, 'icons', 'default-item')
+        icon_url: generateIconUrl(row.icon, 'icons', 'default-item'),
+        dropped_by: droppedBy
       };
 
       // 장비 정보 포함
