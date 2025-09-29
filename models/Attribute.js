@@ -84,7 +84,8 @@ class Attribute {
   }
 
   // ids로 속성 조회 (관련 jobs와 skills 포함) - 슬레이브 DB 사용
-  static async findByIdWithRelations(ids) {
+  static async findByIdWithRelations(ids, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE ids = ?';
       const rows = await db.readQuery(query, [ids]);
@@ -136,7 +137,8 @@ class Attribute {
   }
 
   // 이름으로 속성 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE name = ?';
       const rows = await db.readQuery(query, [name]);
@@ -155,85 +157,10 @@ class Attribute {
     }
   }
 
-  // 속성 생성 - 마스터 DB 사용
-  static async create(attributeData) {
-    try {
-      const { name, description, type, base_value = 0, max_value = 100 } = attributeData;
-      
-      const query = `
-        INSERT INTO Attributes_attributes (name, description, type, base_value, max_value)
-        VALUES (?, ?, ?, ?, ?)
-      `;
-      
-      const result = await dbHelpers.writeQuery(query, [name, description, type, base_value, max_value]);
-      
-      return {
-        id: result.insertId,
-        ...attributeData
-      };
-    } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        throw new Error('이미 존재하는 속성 이름입니다.');
-      }
-      throw error;
-    }
-  }
-
-  // 속성 업데이트 - 마스터 DB 사용
-  static async update(id, updateData) {
-    try {
-      const fields = [];
-      const values = [];
-      
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] !== undefined) {
-          fields.push(`${key} = ?`);
-          values.push(updateData[key]);
-        }
-      });
-      
-      if (fields.length === 0) {
-        throw new Error('업데이트할 데이터가 없습니다.');
-      }
-      
-      values.push(id);
-      
-      const query = `UPDATE Attributes_attributes SET ${fields.join(', ')} WHERE id = ?`;
-      
-      const result = await dbHelpers.writeQuery(query, values);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('속성을 찾을 수 없습니다.');
-      }
-      
-      return {
-        id,
-        ...updateData
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // 속성 삭제 - 마스터 DB 사용
-  static async delete(id) {
-    try {
-      const query = 'DELETE FROM Attributes_attributes WHERE id = ?';
-      
-      const result = await dbHelpers.writeQuery(query, [id]);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('속성을 찾을 수 없습니다.');
-      }
-      
-      return { id };
-    } catch (error) {
-      throw error;
-    }
-  }
 
   // 타입별 속성 조회 - 슬레이브 DB 사용
-  static async findByType(type) {
+  static async findByType(type, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Attributes_attributes WHERE type = ? ORDER BY name';
       const rows = await db.readQuery(query, [type]);
@@ -245,7 +172,8 @@ class Attribute {
   }
 
   // 속성 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Attributes_attributes',

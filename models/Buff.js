@@ -62,7 +62,8 @@ class Buff {
   }
 
   // ID로 버프 조회 - 슬레이브 DB 사용 (ids 컬럼으로 조회)
-  static async findById(id) {
+  static async findById(id, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE ids = ?';
       const rows = await db.readQuery(query, [id]);
@@ -82,7 +83,8 @@ class Buff {
   }
 
   // 이름으로 버프 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE name = ?';
       const rows = await db.readQuery(query, [name]);
@@ -101,98 +103,14 @@ class Buff {
     }
   }
 
-  // 버프 생성 - 마스터 DB 사용
-  static async create(buffData) {
-    try {
-      const { 
-        ids,
-        id_name,
-        name,
-        descriptions,
-        type,
-        duration,
-        effects,
-        icon
-      } = buffData;
-      
-      const query = `
-        INSERT INTO Buffs_buffs (ids, id_name, name, descriptions, type, duration, effects, icon)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      
-      const effectsString = typeof effects === 'object' ? JSON.stringify(effects) : effects;
-      
-      const result = await dbHelpers.writeQuery(query, [ids, id_name, name, descriptions, type, duration, effectsString, icon]);
-      
-      return {
-        id: result.insertId,
-        ...buffData,
-        effects: effectsString,
-        icon_url: icon ? `${process.env.R2_BASE_URL || 'https://r2.gihyeonofsoul.com'}/icons/${icon}.png` : null
-      };
-    } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        throw new Error('이미 존재하는 버프 ID입니다.');
-      }
-      throw error;
-    }
-  }
 
-  // 버프 업데이트 - 마스터 DB 사용
-  static async update(id, updateData) {
-    try {
-      const fields = [];
-      const values = [];
 
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] !== undefined) {
-          if (key === 'effects' && typeof updateData[key] === 'object') {
-            fields.push(`${key} = ?`);
-            values.push(JSON.stringify(updateData[key]));
-          } else {
-            fields.push(`${key} = ?`);
-            values.push(updateData[key]);
-          }
-        }
-      });
 
-      if (fields.length === 0) {
-        throw new Error('업데이트할 데이터가 없습니다.');
-      }
 
-      const query = `UPDATE Buffs_buffs SET ${fields.join(', ')} WHERE id = ?`;
-      values.push(id);
-
-      const result = await dbHelpers.writeQuery(query, values);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('버프를 찾을 수 없습니다.');
-      }
-
-      return await this.findById(id);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // 버프 삭제 - 마스터 DB 사용
-  static async delete(id) {
-    try {
-      const query = 'DELETE FROM Buffs_buffs WHERE id = ?';
-      const result = await dbHelpers.writeQuery(query, [id]);
-      
-      if (result.affectedRows === 0) {
-        throw new Error('버프를 찾을 수 없습니다.');
-      }
-      
-      return { message: '버프가 성공적으로 삭제되었습니다.' };
-    } catch (error) {
-      throw error;
-    }
-  }
 
   // 타입별 버프 조회 - 슬레이브 DB 사용
-  static async findByType(type) {
+  static async findByType(type, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Buffs_buffs WHERE type = ?';
       const rows = await db.readQuery(query, [type]);
@@ -210,7 +128,8 @@ class Buff {
   }
 
   // 버프 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Buffs_buffs',

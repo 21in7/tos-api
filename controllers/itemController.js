@@ -79,30 +79,6 @@ class ItemController {
     successResponse(res, items, `레벨 ${minLevel}-${maxLevel} 아이템들을 조회했습니다.`);
   });
 
-  // 새 아이템 생성
-  createItem = asyncHandler(async (req, res) => {
-    const itemData = req.body;
-    
-    const newItem = await Item.create(itemData);
-    createdResponse(res, newItem, '아이템이 생성되었습니다.');
-  });
-
-  // 아이템 업데이트
-  updateItem = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    const updatedItem = await Item.update(id, updateData);
-    updatedResponse(res, updatedItem, '아이템이 업데이트되었습니다.');
-  });
-
-  // 아이템 삭제
-  deleteItem = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    
-    await Item.delete(id);
-    deletedResponse(res, '아이템이 삭제되었습니다.');
-  });
 
   // 아이템 통계 조회
   getItemStats = asyncHandler(async (req, res) => {

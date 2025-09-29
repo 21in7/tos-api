@@ -54,26 +54,6 @@ router.get('/type/:type',
   attributeController.getAttributesByType
 );
 
-// 새 속성 생성
-router.post('/',
-  attributeValidators.create,
-  handleValidationErrors,
-  attributeController.createAttribute
-);
-
-// 속성 업데이트
-router.put('/:id',
-  validateId,
-  attributeValidators.create,
-  handleValidationErrors,
-  attributeController.updateAttribute
-);
-
-// 속성 삭제
-router.delete('/:id',
-  validateId,
-  handleValidationErrors,
-  attributeController.deleteAttribute
-);
+// 조회 기능만 사용하므로 생성/수정/삭제 라우트는 제거됨
 
 module.exports = router;

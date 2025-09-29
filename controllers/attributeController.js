@@ -39,7 +39,11 @@ class AttributeController {
   getAttributeByIdWithRelations = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const attribute = await Attribute.findByIdWithRelations(id);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const attribute = await Attribute.findByIdWithRelations(id, dbHelpers);
     successResponse(res, attribute, '특성과 관련 정보를 조회했습니다.');
   });
 
@@ -47,7 +51,11 @@ class AttributeController {
   getAttributeByName = asyncHandler(async (req, res) => {
     const { name } = req.params;
     
-    const attribute = await Attribute.findByName(name);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const attribute = await Attribute.findByName(name, dbHelpers);
     if (!attribute) {
       return errorResponse(res, '특성을 찾을 수 없습니다.', 404);
     }
@@ -59,38 +67,22 @@ class AttributeController {
   getAttributesByType = asyncHandler(async (req, res) => {
     const { type } = req.params;
     
-    const attributes = await Attribute.findByType(type);
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const attributes = await Attribute.findByType(type, dbHelpers);
     successResponse(res, attributes, `${type} 타입 특성들을 조회했습니다.`);
   });
 
-  // 새 특성 생성
-  createAttribute = asyncHandler(async (req, res) => {
-    const attributeData = req.body;
-    
-    const newAttribute = await Attribute.create(attributeData);
-    createdResponse(res, newAttribute, '특성이 생성되었습니다.');
-  });
-
-  // 특성 업데이트
-  updateAttribute = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    const updatedAttribute = await Attribute.update(id, updateData);
-    updatedResponse(res, updatedAttribute, '특성이 업데이트되었습니다.');
-  });
-
-  // 특성 삭제
-  deleteAttribute = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    
-    await Attribute.delete(id);
-    deletedResponse(res, '특성이 삭제되었습니다.');
-  });
 
   // 특성 통계 조회
   getAttributeStats = asyncHandler(async (req, res) => {
-    const stats = await Attribute.getStats();
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const stats = await Attribute.getStats(dbHelpers);
     successResponse(res, stats, '특성 통계를 조회했습니다.');
   });
 

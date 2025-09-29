@@ -66,25 +66,6 @@ router.get('/rarity/:rarity',
   itemController.getItemsByRarity
 );
 
-// 새 아이템 생성
-router.post('/',
-  itemValidators.create,
-  handleValidationErrors,
-  itemController.createItem
-);
-
-// 아이템 업데이트
-router.put('/:id',
-  validateId,
-  handleValidationErrors,
-  itemController.updateItem
-);
-
-// 아이템 삭제
-router.delete('/:id',
-  validateId,
-  handleValidationErrors,
-  itemController.deleteItem
-);
+// 조회 기능만 사용하므로 생성/수정/삭제 라우트는 제거됨
 
 module.exports = router;

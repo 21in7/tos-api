@@ -64,30 +64,7 @@ class SkillController {
     successResponse(res, skills, `${type} 타입 스킬들을 조회했습니다.`);
   });
 
-  // 새 스킬 생성
-  createSkill = asyncHandler(async (req, res) => {
-    const skillData = req.body;
-    
-    const newSkill = await Skill.create(skillData);
-    createdResponse(res, newSkill, '스킬이 생성되었습니다.');
-  });
 
-  // 스킬 업데이트
-  updateSkill = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    const updatedSkill = await Skill.update(id, updateData);
-    updatedResponse(res, updatedSkill, '스킬이 업데이트되었습니다.');
-  });
-
-  // 스킬 삭제
-  deleteSkill = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    
-    await Skill.delete(id);
-    deletedResponse(res, '스킬이 삭제되었습니다.');
-  });
 
   // 스킬 통계 조회
   getSkillStats = asyncHandler(async (req, res) => {

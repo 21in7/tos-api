@@ -47,25 +47,6 @@ router.get('/type/:type',
   skillController.getSkillsByType
 );
 
-// 새 스킬 생성
-router.post('/',
-  skillValidators.create,
-  handleValidationErrors,
-  skillController.createSkill
-);
-
-// 스킬 업데이트
-router.put('/:id',
-  validateId,
-  handleValidationErrors,
-  skillController.updateSkill
-);
-
-// 스킬 삭제
-router.delete('/:id',
-  validateId,
-  handleValidationErrors,
-  skillController.deleteSkill
-);
+// 조회 기능만 사용하므로 생성/수정/삭제 라우트는 제거됨
 
 module.exports = router;

@@ -109,7 +109,12 @@ router.get('/name/:name', async (req, res) => {
 router.get('/type/:type', async (req, res) => {
   try {
     const type = req.params.type;
-    const result = await Buff.findByType(type);
+    
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const result = await Buff.findByType(type, dbHelpers);
 
     res.json({
       success: true,
@@ -131,7 +136,11 @@ router.get('/type/:type', async (req, res) => {
 // 버프 통계 조회
 router.get('/stats/overview', async (req, res) => {
   try {
-    const stats = await Buff.getStats();
+    // 언어별 DB 헬퍼 사용
+    const lang = req.language || 'ktos';
+    const dbHelpers = getDbHelpers(lang);
+    
+    const stats = await Buff.getStats(dbHelpers);
 
     res.json({
       success: true,
@@ -150,84 +159,8 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
-// 버프 생성
-router.post('/', [
-  body('name').notEmpty().withMessage('버프 이름은 필수입니다.'),
-  body('type').notEmpty().withMessage('버프 타입은 필수입니다.')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: '입력 데이터 검증 실패',
-        errors: errors.array(),
-        timestamp: new Date().toISOString()
-      });
-    }
 
-    const result = await Buff.create(req.body);
 
-    res.status(201).json({
-      success: true,
-      message: '버프가 성공적으로 생성되었습니다.',
-      data: result,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('버프 생성 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '버프 생성 중 오류가 발생했습니다.',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 
-// 버프 업데이트
-router.put('/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const result = await Buff.update(id, req.body);
-
-    res.json({
-      success: true,
-      message: '버프가 성공적으로 업데이트되었습니다.',
-      data: result,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('버프 업데이트 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '버프 업데이트 중 오류가 발생했습니다.',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// 버프 삭제
-router.delete('/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    await Buff.delete(id);
-
-    res.json({
-      success: true,
-      message: '버프가 성공적으로 삭제되었습니다.',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('버프 삭제 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '버프 삭제 중 오류가 발생했습니다.',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 
 module.exports = router;
