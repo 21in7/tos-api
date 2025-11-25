@@ -20,8 +20,7 @@ class MonsterController {
     };
 
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const result = await Monster.findAll(page, limit, filters, dbHelpers);
     
@@ -33,8 +32,7 @@ class MonsterController {
     const { id } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const monster = await Monster.findById(id, dbHelpers);
     successResponse(res, monster, '몬스터를 조회했습니다.');
@@ -45,8 +43,7 @@ class MonsterController {
     const { name } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const monster = await Monster.findByName(name, dbHelpers);
     if (!monster) {
@@ -61,8 +58,7 @@ class MonsterController {
     const { minLevel, maxLevel } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const monsters = await Monster.findByLevelRange(parseInt(minLevel), parseInt(maxLevel), dbHelpers);
     successResponse(res, monsters, `레벨 ${minLevel}-${maxLevel} 몬스터들을 조회했습니다.`);
@@ -72,8 +68,7 @@ class MonsterController {
   // 몬스터 통계 조회
   getMonsterStats = asyncHandler(async (req, res) => {
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const stats = await Monster.getStats(dbHelpers);
     successResponse(res, stats, '몬스터 통계를 조회했습니다.');
@@ -92,8 +87,7 @@ class MonsterController {
     const filters = { search: searchTerm };
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const result = await Monster.findAll(page, limit, filters, dbHelpers);
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);

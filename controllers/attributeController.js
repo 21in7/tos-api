@@ -15,8 +15,7 @@ class AttributeController {
     };
 
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const result = await Attribute.findAll(page, limit, filters, dbHelpers);
     
@@ -28,8 +27,7 @@ class AttributeController {
     const { id } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const attribute = await Attribute.findById(id, dbHelpers);
     successResponse(res, attribute, '특성을 조회했습니다.');
@@ -40,8 +38,7 @@ class AttributeController {
     const { id } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const attribute = await Attribute.findByIdWithRelations(id, dbHelpers);
     successResponse(res, attribute, '특성과 관련 정보를 조회했습니다.');
@@ -52,8 +49,7 @@ class AttributeController {
     const { name } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const attribute = await Attribute.findByName(name, dbHelpers);
     if (!attribute) {
@@ -68,8 +64,7 @@ class AttributeController {
     const { type } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const attributes = await Attribute.findByType(type, dbHelpers);
     successResponse(res, attributes, `${type} 타입 특성들을 조회했습니다.`);
@@ -79,8 +74,7 @@ class AttributeController {
   // 특성 통계 조회
   getAttributeStats = asyncHandler(async (req, res) => {
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const stats = await Attribute.getStats(dbHelpers);
     successResponse(res, stats, '특성 통계를 조회했습니다.');

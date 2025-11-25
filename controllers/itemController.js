@@ -16,9 +16,8 @@ class ItemController {
       includeEquipment: req.query.includeEquipment !== 'false' // 기본값 true, false로 명시적 설정 시에만 제외
     };
 
-    // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    // 언어별 DB 헬퍼 사용 (Middleware에서 주입된 객체 사용)
+    const dbHelpers = req.dbHelpers;
     
     const result = await Item.findAll(page, limit, filters, dbHelpers);
     
@@ -31,8 +30,7 @@ class ItemController {
     const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const item = await Item.findById(id, includeEquipment, dbHelpers);
     successResponse(res, item, '아이템을 조회했습니다.');
@@ -44,8 +42,7 @@ class ItemController {
     const includeEquipment = req.query.includeEquipment !== 'false'; // 기본값 true
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const item = await Item.findByName(name, includeEquipment, dbHelpers);
     if (!item) {
@@ -58,31 +55,35 @@ class ItemController {
   // 타입별 아이템 조회
   getItemsByType = asyncHandler(async (req, res) => {
     const { type } = req.params;
+    const dbHelpers = req.dbHelpers;
     
-    const items = await Item.findByType(type);
+    const items = await Item.findByType(type, dbHelpers);
     successResponse(res, items, `${type} 타입 아이템들을 조회했습니다.`);
   });
 
   // 희귀도별 아이템 조회
   getItemsByRarity = asyncHandler(async (req, res) => {
     const { rarity } = req.params;
+    const dbHelpers = req.dbHelpers;
     
-    const items = await Item.findByRarity(rarity);
+    const items = await Item.findByRarity(rarity, dbHelpers);
     successResponse(res, items, `${rarity} 등급 아이템들을 조회했습니다.`);
   });
 
   // 레벨 범위별 아이템 조회
   getItemsByLevelRange = asyncHandler(async (req, res) => {
     const { minLevel, maxLevel } = req.params;
+    const dbHelpers = req.dbHelpers;
     
-    const items = await Item.findByLevelRange(parseInt(minLevel), parseInt(maxLevel));
+    const items = await Item.findByLevelRange(parseInt(minLevel), parseInt(maxLevel), dbHelpers);
     successResponse(res, items, `레벨 ${minLevel}-${maxLevel} 아이템들을 조회했습니다.`);
   });
 
 
   // 아이템 통계 조회
   getItemStats = asyncHandler(async (req, res) => {
-    const stats = await Item.getStats();
+    const dbHelpers = req.dbHelpers;
+    const stats = await Item.getStats(dbHelpers);
     successResponse(res, stats, '아이템 통계를 조회했습니다.');
   });
 
@@ -97,8 +98,9 @@ class ItemController {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filters = { search: searchTerm };
+    const dbHelpers = req.dbHelpers;
     
-    const result = await Item.findAll(page, limit, filters);
+    const result = await Item.findAll(page, limit, filters, dbHelpers);
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);
   });
 

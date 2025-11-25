@@ -86,7 +86,8 @@ class Map {
   }
 
   // ID로 맵 조회 - 슬레이브 DB 사용 (ids 컬럼으로 조회)
-  static async findById(id) {
+  static async findById(id, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE ids = ?';
       const rows = await db.readQuery(query, [id]);
@@ -106,7 +107,8 @@ class Map {
   }
 
   // 이름으로 맵 조회 - 슬레이브 DB 사용
-  static async findByName(name) {
+  static async findByName(name, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE name = ?';
       const rows = await db.readQuery(query, [name]);
@@ -214,7 +216,8 @@ class Map {
   }
 
   // 타입별 맵 조회 - 슬레이브 DB 사용
-  static async findByType(type) {
+  static async findByType(type, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE type = ?';
       const rows = await db.readQuery(query, [type]);
@@ -232,7 +235,8 @@ class Map {
   }
 
   // 레벨별 맵 조회 - 슬레이브 DB 사용
-  static async findByLevel(level) {
+  static async findByLevel(level, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE level = ?';
       const rows = await db.readQuery(query, [level]);
@@ -250,7 +254,8 @@ class Map {
   }
 
   // CM 가능 맵 조회 - 슬레이브 DB 사용
-  static async findCMMaps() {
+  static async findCMMaps(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE has_cm = 1';
       const rows = await db.readQuery(query);
@@ -268,7 +273,8 @@ class Map {
   }
 
   // 워프 가능 맵 조회 - 슬레이브 DB 사용
-  static async findWarpMaps() {
+  static async findWarpMaps(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Maps_maps WHERE has_warp = 1';
       const rows = await db.readQuery(query);
@@ -286,7 +292,8 @@ class Map {
   }
 
   // 맵 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Maps_maps',
