@@ -69,7 +69,7 @@ class Item {
           const item = processedRows[i];
           if (item.type === 'Equipment' || item.type === 'WEAPON' || item.type === 'ARMOR' || 
               item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor') {
-            const equipment = await this.getEquipmentInfo(item.id);
+            const equipment = await this.getEquipmentInfo(item.id, db);
             if (equipment) {
               processedRows[i] = {
                 ...item,
@@ -143,7 +143,7 @@ class Item {
       // 장비 정보 포함
       if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
           row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
-        const equipment = await this.getEquipmentInfo(row.id);
+        const equipment = await this.getEquipmentInfo(row.id, db);
         if (equipment) {
           result.equipment = equipment;
         }
@@ -197,7 +197,7 @@ class Item {
       // 장비 정보 포함
       if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
           row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
-        const equipment = await this.getEquipmentInfo(row.id);
+        const equipment = await this.getEquipmentInfo(row.id, db);
         if (equipment) {
           result.equipment = equipment;
         }
