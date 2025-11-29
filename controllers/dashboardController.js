@@ -1,4 +1,3 @@
-const { dbHelpers, getDbHelpers } = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/response');
 const { asyncHandler } = require('../middleware/errorHandler');
 
@@ -6,8 +5,7 @@ class DashboardController {
   // 대시보드 전체 통계 조회 - 슬레이브 DB 사용
   getDashboardStats = asyncHandler(async (req, res) => {
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const queries = [
       'SELECT COUNT(*) as total FROM Attributes_attributes',
@@ -42,6 +40,7 @@ class DashboardController {
   // 최근 추가된 데이터 조회 - 슬레이브 DB 사용
   getRecentData = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 5;
+    const dbHelpers = req.dbHelpers;
     
     const queries = [
       `SELECT 'attribute' as type, id, name, created_at FROM Attributes_attributes ORDER BY id DESC LIMIT ${limit}`,
@@ -77,6 +76,7 @@ class DashboardController {
 
   // 데이터베이스 테이블 정보 조회 - 슬레이브 DB 사용
   getTableInfo = asyncHandler(async (req, res) => {
+    const dbHelpers = req.dbHelpers;
     const tables = [
       'Attributes_attributes', 'Buffs_buffs', 'Items_items', 'Monsters_monsters', 
       'Skills_skills', 'Jobs_jobs', 'Maps_maps', 'Other_achievements'

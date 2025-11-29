@@ -16,8 +16,7 @@ class SkillController {
     };
 
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const result = await Skill.findAll(page, limit, filters, dbHelpers);
     
@@ -29,8 +28,7 @@ class SkillController {
     const { id } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const skill = await Skill.findById(id, dbHelpers);
     successResponse(res, skill, '스킬을 조회했습니다.');
@@ -41,8 +39,7 @@ class SkillController {
     const { name } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const skill = await Skill.findByName(name, dbHelpers);
     if (!skill) {
@@ -57,8 +54,7 @@ class SkillController {
     const { type } = req.params;
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const skills = await Skill.findByType(type, dbHelpers);
     successResponse(res, skills, `${type} 타입 스킬들을 조회했습니다.`);
@@ -69,8 +65,7 @@ class SkillController {
   // 스킬 통계 조회
   getSkillStats = asyncHandler(async (req, res) => {
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const stats = await Skill.getStats(dbHelpers);
     successResponse(res, stats, '스킬 통계를 조회했습니다.');
@@ -89,8 +84,7 @@ class SkillController {
     const filters = { search: searchTerm };
     
     // 언어별 DB 헬퍼 사용
-    const lang = req.language || 'ktos';
-    const dbHelpers = getDbHelpers(lang);
+    const dbHelpers = req.dbHelpers;
     
     const result = await Skill.findAll(page, limit, filters, dbHelpers);
     paginatedResponse(res, result.data, result.pagination, `"${searchTerm}" 검색 결과입니다.`);
