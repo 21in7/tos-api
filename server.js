@@ -168,50 +168,44 @@ app.use((req, res, next) => {
 
   // 언어 정보를 req 객체에 저장
   req.language = lang;
+
+  try {
+    req.dbHelpers = require('./config/database').getDbHelpers(lang);
+  } catch (e) {
+    console.error(`[DB Helper Error] Failed to get dbHelpers for ${lang}:`, e);
+    // Don't crash, but db usage will fail
+  }
+
   console.log(`[라우팅] 경로: ${originalPath}, 감지된 언어: ${lang}`);
   next();
 });
 
-// 언어별 API 라우트 (더 구체적인 경로를 먼저 설정)
-app.use('/ktos/api/attributes', require('./routes/attributes'));
-app.use('/ktos/api/buffs', require('./routes/buffs'));
-app.use('/ktos/api/items', require('./routes/items'));
-app.use('/ktos/api/monsters', require('./routes/monsters'));
-app.use('/ktos/api/skills', require('./routes/skills'));
-app.use('/ktos/api/jobs', require('./routes/jobs'));
-app.use('/ktos/api/maps', require('./routes/maps'));
-app.use('/ktos/api/dashboard', require('./routes/dashboard'));
+// Resource routes definition
+const resources = [
+  'attributes',
+  'buffs',
+  'items',
+  'monsters',
+  'skills',
+  'jobs',
+  'maps',
+  'dashboard'
+];
 
+// Languages to support
+const languages = ['ktos', 'itos', 'jtos'];
 
-app.use('/itos/api/attributes', require('./routes/attributes'));
-app.use('/itos/api/buffs', require('./routes/buffs'));
-app.use('/itos/api/items', require('./routes/items'));
-app.use('/itos/api/monsters', require('./routes/monsters'));
-app.use('/itos/api/skills', require('./routes/skills'));
-app.use('/itos/api/jobs', require('./routes/jobs'));
-app.use('/itos/api/maps', require('./routes/maps'));
-app.use('/itos/api/dashboard', require('./routes/dashboard'));
+// Register routes for each language
+languages.forEach(lang => {
+  resources.forEach(resource => {
+    app.use(`/${lang}/api/${resource}`, require(`./routes/${resource}`));
+  });
+});
 
-
-app.use('/jtos/api/attributes', require('./routes/attributes'));
-app.use('/jtos/api/buffs', require('./routes/buffs'));
-app.use('/jtos/api/items', require('./routes/items'));
-app.use('/jtos/api/monsters', require('./routes/monsters'));
-app.use('/jtos/api/skills', require('./routes/skills'));
-app.use('/jtos/api/jobs', require('./routes/jobs'));
-app.use('/jtos/api/maps', require('./routes/maps'));
-app.use('/jtos/api/dashboard', require('./routes/dashboard'));
-
-
-// 기본 API 라우트 (ktos) - 마지막에 설정
-app.use('/api/attributes', require('./routes/attributes'));
-app.use('/api/buffs', require('./routes/buffs'));
-app.use('/api/items', require('./routes/items'));
-app.use('/api/monsters', require('./routes/monsters'));
-app.use('/api/skills', require('./routes/skills'));
-app.use('/api/jobs', require('./routes/jobs'));
-app.use('/api/maps', require('./routes/maps'));
-app.use('/api/dashboard', require('./routes/dashboard'));
+// Register default routes (ktos) - set at the end
+resources.forEach(resource => {
+  app.use(`/api/${resource}`, require(`./routes/${resource}`));
+});
 
 
 // 기본 라우트

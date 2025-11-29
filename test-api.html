@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 서버 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .url {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 API 서버 리팩토링 테스트</h1>
+    <p style="text-align: center; color: #666;">서버 주소: http://localhost:3000</p>
+    
+    <div class="test-section">
+        <h2>1. 기본 라우트</h2>
+        <div class="test-item">
+            <div class="url">GET /</div>
+            <button onclick="testEndpoint('/', 'root')">테스트</button>
+            <div id="result-root" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 아이템 API</h2>
+        
+        <div class="test-item">
+            <div class="url">GET /api/items?page=1&limit=2 (기본 - ktos)</div>
+            <button onclick="testEndpoint('/api/items?page=1&limit=2', 'items-default')">테스트</button>
+            <div id="result-items-default" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-item">
+            <div class="url">GET /ktos/api/items?page=1&limit=2</div>
+            <button onclick="testEndpoint('/ktos/api/items?page=1&limit=2', 'items-ktos')">테스트</button>
+            <div id="result-items-ktos" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-item">
+            <div class="url">GET /itos/api/items?page=1&limit=2</div>
+            <button onclick="testEndpoint('/itos/api/items?page=1&limit=2', 'items-itos')">테스트</button>
+            <div id="result-items-itos" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-item">
+            <div class="url">GET /jtos/api/items?page=1&limit=2</div>
+            <button onclick="testEndpoint('/jtos/api/items?page=1&limit=2', 'items-jtos')">테스트</button>
+            <div id="result-items-jtos" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 아이템 통계 API</h2>
+        
+        <div class="test-item">
+            <div class="url">GET /ktos/api/items/stats</div>
+            <button onclick="testEndpoint('/ktos/api/items/stats', 'stats-ktos')">테스트</button>
+            <div id="result-stats-ktos" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-item">
+            <div class="url">GET /api/items/stats (기본 - ktos)</div>
+            <button onclick="testEndpoint('/api/items/stats', 'stats-default')">테스트</button>
+            <div id="result-stats-default" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>전체 테스트</h2>
+        <button onclick="runAllTests()" style="background-color: #28a745; font-size: 16px; padding: 15px 30px;">
+            🚀 모든 테스트 실행
+        </button>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3000';
+
+        async function testEndpoint(path, resultId) {
+            const url = BASE_URL + path;
+            const resultDiv = document.getElementById(`result-${resultId}`);
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = '요청 중...';
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                let result = `Status: ${response.status}\n`;
+                result += `Time: ${duration}ms\n`;
+                result += `URL: ${url}\n`;
+                result += `\n${'='.repeat(60)}\n\n`;
+
+                if (response.ok) {
+                    try {
+                        const data = await response.json();
+                        
+                        result += `✅ 성공!\n\n`;
+                        
+                        if (data.success !== undefined) {
+                            result += `Success: ${data.success}\n`;
+                        }
+                        if (data.message) {
+                            result += `Message: ${data.message}\n`;
+                        }
+                        if (data.language) {
+                            result += `Language: ${data.language}\n`;
+                        }
+                        if (data.data && Array.isArray(data.data)) {
+                            result += `\nData Count: ${data.data.length}\n`;
+                            if (data.data.length > 0) {
+                                result += `\nFirst Item:\n`;
+                                result += JSON.stringify(data.data[0], null, 2).substring(0, 500) + '...\n';
+                            }
+                        }
+                        if (data.pagination) {
+                            result += `\nPagination:\n`;
+                            result += `  - Page: ${data.pagination.page}\n`;
+                            result += `  - Limit: ${data.pagination.limit}\n`;
+                            result += `  - Total: ${data.pagination.total}\n`;
+                            result += `  - Total Pages: ${data.pagination.totalPages}\n`;
+                        }
+                        if (data.endpoints) {
+                            result += `\nEndpoints: ${Object.keys(data.endpoints).length}개\n`;
+                        }
+
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent = result;
+                    } catch (e) {
+                        const text = await response.text();
+                        result += `⚠️ JSON 파싱 실패: ${e.message}\n\n`;
+                        result += `응답:\n${text.substring(0, 500)}`;
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = result;
+                    }
+                } else {
+                    const text = await response.text();
+                    result += `❌ 오류: HTTP ${response.status}\n\n`;
+                    result += `응답:\n${text}`;
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = result;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 요청 실패: ${error.message}\n\n연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.`;
+            }
+        }
+
+        async function runAllTests() {
+            const tests = [
+                { path: '/', id: 'root' },
+                { path: '/api/items?page=1&limit=2', id: 'items-default' },
+                { path: '/ktos/api/items?page=1&limit=2', id: 'items-ktos' },
+                { path: '/itos/api/items?page=1&limit=2', id: 'items-itos' },
+                { path: '/jtos/api/items?page=1&limit=2', id: 'items-jtos' },
+                { path: '/ktos/api/items/stats', id: 'stats-ktos' },
+                { path: '/api/items/stats', id: 'stats-default' },
+            ];
+
+            for (const test of tests) {
+                await testEndpoint(test.path, test.id);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            alert('✅ 모든 테스트 완료!');
+        }
+    </script>
+</body>
+</html>
+

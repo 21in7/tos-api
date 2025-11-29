@@ -69,7 +69,7 @@ class Item {
           const item = processedRows[i];
           if (item.type === 'Equipment' || item.type === 'WEAPON' || item.type === 'ARMOR' || 
               item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor') {
-            const equipment = await this.getEquipmentInfo(item.id);
+            const equipment = await this.getEquipmentInfo(item.id, db);
             if (equipment) {
               processedRows[i] = {
                 ...item,
@@ -143,7 +143,7 @@ class Item {
       // 장비 정보 포함
       if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
           row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
-        const equipment = await this.getEquipmentInfo(row.id);
+        const equipment = await this.getEquipmentInfo(row.id, db);
         if (equipment) {
           result.equipment = equipment;
         }
@@ -197,7 +197,7 @@ class Item {
       // 장비 정보 포함
       if (includeEquipment && (row.type === 'Equipment' || row.type === 'WEAPON' || row.type === 'ARMOR' || 
           row.type === 'equipment' || row.type === 'weapon' || row.type === 'armor')) {
-        const equipment = await this.getEquipmentInfo(row.id);
+        const equipment = await this.getEquipmentInfo(row.id, db);
         if (equipment) {
           result.equipment = equipment;
         }
@@ -307,7 +307,8 @@ class Item {
   }
 
   // 타입별 아이템 조회 - 슬레이브 DB 사용
-  static async findByType(type) {
+  static async findByType(type, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = `
         SELECT i.*, it.name as type_name 
@@ -316,7 +317,7 @@ class Item {
         WHERE it.name = ? 
         ORDER BY i.level, i.name
       `;
-      const rows = await dbHelpers.readQuery(query, [type]);
+      const rows = await db.readQuery(query, [type]);
       
       return rows;
     } catch (error) {
@@ -325,10 +326,11 @@ class Item {
   }
 
   // 희귀도별 아이템 조회 - 슬레이브 DB 사용
-  static async findByRarity(rarity) {
+  static async findByRarity(rarity, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Items_items WHERE rarity = ? ORDER BY level DESC, name';
-      const rows = await dbHelpers.readQuery(query, [rarity]);
+      const rows = await db.readQuery(query, [rarity]);
       
       return rows;
     } catch (error) {
@@ -337,10 +339,11 @@ class Item {
   }
 
   // 레벨 범위별 아이템 조회 - 슬레이브 DB 사용
-  static async findByLevelRange(minLevel, maxLevel) {
+  static async findByLevelRange(minLevel, maxLevel, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const query = 'SELECT * FROM Items_items WHERE level >= ? AND level <= ? ORDER BY level, name';
-      const rows = await dbHelpers.readQuery(query, [minLevel, maxLevel]);
+      const rows = await db.readQuery(query, [minLevel, maxLevel]);
       
       return rows;
     } catch (error) {
@@ -349,11 +352,12 @@ class Item {
   }
 
   // 장비 정보 조회 - 슬레이브 DB 사용
-  static async getEquipmentInfo(itemId) {
+  static async getEquipmentInfo(itemId, dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       // 장비 기본 정보 조회
       const equipmentQuery = 'SELECT * FROM Items_equipments WHERE item_id = ?';
-      const equipmentRows = await dbHelpers.readQuery(equipmentQuery, [itemId]);
+      const equipmentRows = await db.readQuery(equipmentQuery, [itemId]);
       
       if (equipmentRows.length === 0) {
         return null;
@@ -363,7 +367,7 @@ class Item {
       
       // 장비 보너스 정보 조회
       const bonusQuery = 'SELECT * FROM Items_equipment_bonus WHERE equipment_id = ?';
-      const bonusRows = await dbHelpers.readQuery(bonusQuery, [itemId]);
+      const bonusRows = await db.readQuery(bonusQuery, [itemId]);
       
       return {
         ...equipment,
@@ -376,7 +380,8 @@ class Item {
   }
 
   // 아이템 통계 조회 - 슬레이브 DB 사용
-  static async getStats() {
+  static async getStats(dbHelpers = null) {
+    const db = dbHelpers || require('../config/database').dbHelpers;
     try {
       const queries = [
         'SELECT COUNT(*) as total FROM Items_items',
@@ -387,7 +392,7 @@ class Item {
       ];
       
       const results = await Promise.all(
-        queries.map(query => dbHelpers.readQuery(query))
+        queries.map(query => db.readQuery(query))
       );
       
       return {
